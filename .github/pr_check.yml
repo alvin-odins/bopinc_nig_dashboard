@@ -1,0 +1,111 @@
+name: PR check
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    name: Lint and validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check for console.log statements in production JS
+        run: |
+          echo "Checking for leftover console.log statements..."
+          # Allow console.log only in files explicitly marked as dev-only
+          if grep -rn "console\.log" src/components/ config/ --include="*.js" \
+            | grep -v "console.log('\[BOPinc\]" \
+            | grep -v "// dev" \
+            | grep -v "console.error"; then
+            echo "WARNING: console.log found in production files. Consider removing before merge."
+          else
+            echo "No unexpected console.log statements found."
+          fi
+
+      - name: Check for TODO / FIXME markers
+        run: |
+          echo "Checking for unresolved TODO markers..."
+          if grep -rn "TODO\|FIXME\|HACK\|XXX" src/ config/ --include="*.js" --include="*.css" --include="*.html"; then
+            echo "INFO: Unresolved markers found above. Review before merging."
+          else
+            echo "No unresolved markers found."
+          fi
+
+      - name: Validate HTML structure of index.html
+        run: |
+          echo "Checking index.html for basic structure..."
+          if ! grep -q "<!DOCTYPE html>" index.html; then
+            echo "ERROR: Missing DOCTYPE in index.html"
+            exit 1
+          fi
+          if ! grep -q '<meta name="viewport"' index.html; then
+            echo "ERROR: Missing viewport meta tag in index.html"
+            exit 1
+          fi
+          if ! grep -q 'lang=' index.html; then
+            echo "ERROR: Missing lang attribute on html element"
+            exit 1
+          fi
+          echo "index.html basic structure OK"
+
+      - name: Check CSS variables file is present
+        run: |
+          if [ ! -f "src/styles/variables.css" ]; then
+            echo "ERROR: src/styles/variables.css is missing"
+            exit 1
+          fi
+          echo "variables.css present"
+
+      - name: Check all linked script files exist
+        run: |
+          echo "Checking that JS files referenced in index.html exist..."
+          for file in \
+            "config/roles.js" \
+            "config/breakpoints.js" \
+            "src/components/icons.js" \
+            "src/components/session.js" \
+            "src/components/change-request-modal.js" \
+            "src/components/bottom-nav.js"; do
+            if [ ! -f "$file" ]; then
+              echo "ERROR: Referenced file missing: $file"
+              exit 1
+            else
+              echo "  OK: $file"
+            fi
+          done
+
+      - name: Check secrets file is not committed
+        run: |
+          if [ -f "config/secrets.js" ]; then
+            echo "ERROR: config/secrets.js has been committed. Remove it immediately and rotate any API keys."
+            exit 1
+          fi
+          echo "No secrets file found in repository. Good."
+
+      - name: Check docs structure
+        run: |
+          echo "Checking required docs files exist..."
+          for file in \
+            "docs/getting-started/01-what-is-this.md" \
+            "docs/getting-started/02-how-data-flows.md" \
+            "docs/getting-started/03-first-time-setup.md" \
+            "docs/getting-started/04-roles-and-access.md" \
+            "docs/getting-started/05-responsive-guide.md" \
+            "README.md" \
+            "CHANGELOG.md"; do
+            if [ ! -f "$file" ]; then
+              echo "WARNING: Expected docs file missing: $file"
+            else
+              echo "  OK: $file"
+            fi
+          done
+
+      - name: Summary
+        run: |
+          echo ""
+          echo "PR check complete."
+          echo "Review any warnings above before merging."
+          echo "Errors (exit 1) must be fixed before this PR can be merged."

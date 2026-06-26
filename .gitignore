@@ -1,0 +1,25 @@
+# Secrets — never commit these
+config/secrets.js
+config/secrets.*.js
+.env
+.env.*
+
+# Node (for export libraries only)
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+
+# Build artifacts
+dist/
+.cache/
+
+
+# added now --- make active during phase 8
+troubleshooting/

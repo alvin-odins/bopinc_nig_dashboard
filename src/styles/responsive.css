@@ -1,0 +1,144 @@
+/* ============================================================
+   BOPinc Nigeria Dashboard — Responsive Styles
+   All breakpoints defined here. Written mobile-first (min-width).
+   ============================================================ */
+
+/* ── 480px — larger phones ── */
+@media (min-width: 480px) {
+  .page { padding: var(--space-5); }
+
+  .stat-grid { grid-template-columns: repeat(2, 1fr); gap: var(--space-4); }
+
+  .modal-overlay { align-items: center; }
+  .modal {
+    border-radius: var(--radius-xl);
+    max-width: 520px;
+    margin: var(--space-6);
+  }
+
+  #toast-container {
+    left: auto;
+    right: var(--space-5);
+    width: 340px;
+  }
+}
+
+/* ── 768px — tablet, sidebar appears ── */
+@media (min-width: 768px) {
+  /* Show sidebar, hide bottom nav */
+  #sidebar { display: flex; }
+  #bottom-nav { display: none; }
+
+  /* App shifts right to make room for icon sidebar */
+  #app {
+    padding-bottom: 0;
+    padding-left: var(--sidebar-width-icon);
+    transition: padding-left var(--transition-normal);
+  }
+  #app.sidebar-expanded { padding-left: var(--sidebar-width-full); }
+
+  #header {
+    left: var(--sidebar-width-icon);
+    transition: left var(--transition-normal);
+  }
+  #app.sidebar-expanded #header { left: var(--sidebar-width-full); }
+
+  /* Show date in header */
+  .header-date { display: block; }
+
+  /* Three-column stat grid */
+  .stat-grid { grid-template-columns: repeat(3, 1fr); }
+
+  .page { padding: var(--space-6); }
+
+  /* Two-column home layout */
+  .home-layout {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: var(--space-5);
+    align-items: start;
+  }
+
+  /* Toast bottom right */
+  #toast-container {
+    bottom: var(--space-5);
+    right: var(--space-6);
+    left: auto;
+    width: 360px;
+  }
+}
+
+/* ── 1024px — laptop, sidebar expands ── */
+@media (min-width: 1024px) {
+  /* Sidebar auto-expands to full width */
+  #sidebar { width: var(--sidebar-width-full); }
+  #sidebar .nav-label { opacity: 1; }
+  #sidebar .sidebar-section-label { opacity: 1; }
+  #sidebar .nav-badge { opacity: 1; }
+
+  #app { padding-left: var(--sidebar-width-full); }
+  #header { left: var(--sidebar-width-full); }
+
+  /* Four-column stat grid */
+  .stat-grid { grid-template-columns: repeat(4, 1fr); }
+
+  .page { padding: var(--space-8); }
+
+  /* Wider home sidebar */
+  .home-layout { grid-template-columns: 1fr 360px; gap: var(--space-6); }
+}
+
+/* ── 1280px — wide desktop ── */
+@media (min-width: 1280px) {
+  .page { padding: var(--space-8) var(--space-10); max-width: 1440px; }
+
+  .home-layout { grid-template-columns: 1fr 400px; }
+
+  .stat-grid { gap: var(--space-5); }
+}
+
+/* ── Print styles (PDF/Word export) ── */
+@media print {
+  #pulse-strip,
+  #header,
+  #sidebar,
+  #bottom-nav,
+  .export-toolbar,
+  .btn-request,
+  .modal-overlay,
+  #toast-container,
+  .page-nav-actions { display: none !important; }
+
+  #app {
+    padding: 0 !important;
+  }
+
+  .page {
+    display: block !important;
+    padding: 12mm !important;
+    max-width: 100% !important;
+  }
+
+  .card {
+    box-shadow: none !important;
+    border: 1px solid #ccc !important;
+    break-inside: avoid;
+  }
+
+  .stat-grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+  }
+
+  .chart-wrapper {
+    break-inside: avoid;
+    min-height: 200px;
+  }
+
+  body { font-size: 12px; color: #000; background: #fff; }
+  .badge { border: 1px solid #ccc; }
+
+  @page {
+    size: A4 landscape;
+    margin: 15mm;
+  }
+}

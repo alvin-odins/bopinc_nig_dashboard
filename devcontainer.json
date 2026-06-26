@@ -1,0 +1,31 @@
+{
+  "name": "BOPinc Nigeria Dashboard",
+  "image": "mcr.microsoft.com/devcontainers/universal:2",
+
+  "forwardPorts": [8080],
+
+  "portsAttributes": {
+    "8080": {
+      "label": "Dashboard",
+      "onAutoForward": "openBrowser",
+      "visibility": "private"
+    }
+  },
+
+  "postStartCommand": "python3 -m http.server 8080",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ritwickdey.LiveServer",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint"
+      ],
+      "settings": {
+        "liveServer.settings.port": 8080,
+        "liveServer.settings.root": "/",
+        "editor.formatOnSave": true
+      }
+    }
+  }
+}
