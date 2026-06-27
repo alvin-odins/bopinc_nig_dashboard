@@ -1,29 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#122a1c">
   <meta name="description" content="BOPinc Nigeria — team dashboard for schedules, projects, opportunities, and intelligence.">
   <title>BOPinc Nigeria Dashboard</title>
 
-  <!-- styles -->
-    
+  <!-- Styles -->
   <link rel="stylesheet" href="src/styles/variables.css">
   <link rel="stylesheet" href="src/styles/main.css">
   <link rel="stylesheet" href="src/styles/responsive.css">
   <link rel="stylesheet" href="src/styles/print.css" media="print">
 
-
-  <!-- preconnect for google fonts -->
-
+  <!-- Preconnect for Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-  <!-- inline style -->
-
-   <style>
+  <style>
     /* ── Inline critical styles for immediate render ── */
     .role-switcher {
       position: fixed;
@@ -77,24 +71,29 @@
       text-align: center;
       font-weight: var(--weight-medium);
     }
- 
+
     /* Home page specifics */
     .schedule-strip {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 4px;
+      max-height: 220px;
+      overflow-y: auto;
     }
+    .schedule-strip::-webkit-scrollbar { width: 3px; }
+    .schedule-strip::-webkit-scrollbar-thumb { background: var(--color-border-strong); border-radius: 2px; }
     .schedule-person {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 8px 0;
+      gap: 8px;
+      padding: 5px 0;
       border-bottom: 1px solid var(--color-border);
+      flex-shrink: 0;
     }
     .schedule-person:last-child { border-bottom: none; }
     .schedule-bars {
       flex: 1;
-      height: 24px;
+      height: 20px;
       background: var(--color-surface-2);
       border-radius: var(--radius-sm);
       position: relative;
@@ -102,8 +101,8 @@
     }
     .schedule-bar {
       position: absolute;
-      top: 3px;
-      height: 18px;
+      top: 2px;
+      height: 16px;
       border-radius: 3px;
       font-size: 9px;
       display: flex;
@@ -118,7 +117,7 @@
     .bar-focus     { background: var(--blue-500); }
     .bar-personal  { background: var(--slate-400); }
     .bar-leave     { background: var(--amber-400); color: var(--amber-900); }
- 
+
     .avail-dot {
       width: 8px; height: 8px;
       border-radius: 50%;
@@ -128,7 +127,7 @@
     .dot-busy      { background: var(--color-warning); }
     .dot-leave     { background: var(--color-danger); }
     .dot-offline   { background: var(--slate-300); }
- 
+
     @media (min-width: 768px) {
       .role-switcher {
         bottom: 20px;
@@ -136,18 +135,15 @@
       }
     }
   </style>
-
 </head>
 <body>
 
-<!-- deve banner (phase1 only - remove this before lunch) --- -->
-
+<!-- ── Dev banner (phase 1 only — remove before launch) ── -->
 <div class="dev-banner" id="dev-banner">
   Phase 1 shell — click your avatar (top right) to switch roles and test access control
 </div>
 
-<!-- ---pulse strip - always visible country awareness bar --- -->
-
+<!-- ── Pulse strip — always visible country awareness bar ── -->
 <div id="pulse-strip" role="banner" aria-label="Nigeria team status">
   <span class="pulse-flag" aria-hidden="true">🇳🇬</span>
   <span class="pulse-label">BOPinc Nigeria</span>
@@ -162,13 +158,12 @@
   <span class="pulse-alert" id="pulse-alert">Next sync in 28 min — all systems operational</span>
 </div>
 
-<!-- --- header ---  -->
-
+<!-- ── Header ── -->
 <header id="header" role="banner">
   <button class="header-menu-btn" id="sidebar-toggle-btn" aria-label="Toggle navigation" aria-expanded="false">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
   </button>
- 
+
   <div class="header-logo">
     <div class="header-logo-mark" aria-hidden="true">BO</div>
     <div>
@@ -176,24 +171,29 @@
       <div class="header-subtitle">BOPinc team dashboard</div>
     </div>
   </div>
- 
+
   <div class="header-spacer"></div>
   <div class="header-date" id="header-date" aria-live="polite"></div>
- 
+
+  <!-- Notification bell -->
+  <button class="header-menu-btn" id="notif-btn" aria-label="Notifications" aria-haspopup="true" aria-expanded="false" style="position:relative">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+    <span id="notif-badge" style="display:none;position:absolute;top:4px;right:4px;width:16px;height:16px;background:var(--amber-400);color:var(--amber-900);border-radius:50%;font-size:9px;font-weight:600;display:flex;align-items:center;justify-content:center;line-height:1">3</span>
+  </button>
+
   <!-- Avatar + role badge — click to switch role in phase 1 -->
   <button class="header-avatar" id="avatar-btn" aria-label="Switch user role (demo)" aria-haspopup="true" aria-expanded="false">
     <span id="avatar-initials">—</span>
     <span class="header-role-badge" id="avatar-role-badge" title="Role indicator" aria-hidden="true"></span>
   </button>
 </header>
-    
-<!-- role switcher dropdown (phase 1 demon) --- -->
 
+<!-- ── Role switcher dropdown (phase 1 demo) ── -->
 <div class="role-switcher" id="role-switcher" role="dialog" aria-label="Switch demo user" aria-modal="true">
   <div class="role-switcher-title">Switch user (demo)</div>
   <div id="role-switcher-list"></div>
 </div>
- 
+
 <!-- ── Sidebar (tablet+) ── -->
 <nav id="sidebar" aria-label="Main navigation">
   <div class="sidebar-nav" id="sidebar-nav">
@@ -206,17 +206,16 @@
     </button>
   </div>
 </nav>
- 
+
 <!-- ── Bottom nav (mobile) ── -->
 <nav id="bottom-nav" aria-label="Mobile navigation">
   <!-- Populated by JS -->
 </nav>
 
-
 <!-- ── Main content ── -->
 <div id="app">
   <main id="main" role="main">
- 
+
     <!-- ══ HOME PAGE ══ -->
     <section class="page active" data-page="home" aria-label="Home">
       <div class="page-header">
@@ -224,49 +223,53 @@
         <h1 class="page-title">Good morning, <span id="home-greeting-name">team</span></h1>
         <p class="page-subtitle">Here's what's happening across the Nigeria office today.</p>
       </div>
- 
+
       <!-- Stat cards -->
       <div class="stat-grid" role="list" aria-label="Key stats">
-        <div class="stat-card" role="listitem" style="--stat-accent:var(--color-accent);--stat-icon-bg:var(--green-50);--stat-icon-color:var(--green-600)">
+        <div class="stat-card" role="listitem" onclick="navigate('team-pulse')" title="View team schedules"
+          style="--stat-accent:var(--color-accent);--stat-icon-bg:var(--green-50);--stat-icon-color:var(--green-600)">
           <div class="stat-icon" aria-hidden="true">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           </div>
           <div class="stat-label">Team available</div>
           <div class="stat-value" id="stat-available">6/8</div>
           <div class="stat-meta">2 on leave today</div>
         </div>
- 
-        <div class="stat-card" role="listitem" style="--stat-accent:var(--blue-500);--stat-icon-bg:#eff6ff;--stat-icon-color:var(--blue-500)">
+
+        <div class="stat-card" role="listitem" onclick="navigate('projects')" title="View active projects"
+          style="--stat-accent:var(--blue-500);--stat-icon-bg:#eff6ff;--stat-icon-color:var(--blue-500)">
           <div class="stat-icon" aria-hidden="true">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
           </div>
           <div class="stat-label">Active projects</div>
           <div class="stat-value" id="stat-projects">4</div>
           <div class="stat-meta">1 ending this month</div>
         </div>
- 
-        <div class="stat-card" role="listitem" style="--stat-accent:var(--amber-500);--stat-icon-bg:var(--amber-50);--stat-icon-color:var(--amber-600)">
+
+        <div class="stat-card" role="listitem" onclick="navigate('opportunities')" title="View opportunities"
+          style="--stat-accent:var(--amber-500);--stat-icon-bg:var(--amber-50);--stat-icon-color:var(--amber-600)">
           <div class="stat-icon" aria-hidden="true">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
           </div>
-          <div class="stat-label">Open opportunities</div>
+          <div class="stat-label">Opportunities</div>
           <div class="stat-value" id="stat-opps">7</div>
           <div class="stat-meta">3 in energy sector</div>
         </div>
- 
-        <div class="stat-card" role="listitem" style="--stat-accent:#8b5cf6;--stat-icon-bg:#f5f3ff;--stat-icon-color:#8b5cf6">
+
+        <div class="stat-card" role="listitem" onclick="openVisitDetail(DEMO_VISITS[0])" title="View visit details"
+          style="--stat-accent:#8b5cf6;--stat-icon-bg:#f5f3ff;--stat-icon-color:#8b5cf6">
           <div class="stat-icon" aria-hidden="true">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21 4 19 2c-2-2-4-2-5.5-.5L10 5 1.8 6.2a.4.4 0 0 0-.2.7l1.7 1.7 1.9.9 2.3 2.3.9 1.9 1.7 1.7a.4.4 0 0 0 .7-.2z"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21 4 19 2c-2-2-4-2-5.5-.5L10 5 1.8 6.2a.4.4 0 0 0-.2.7l1.7 1.7 1.9.9 2.3 2.3.9 1.9 1.7 1.7a.4.4 0 0 0 .7-.2z"/></svg>
           </div>
           <div class="stat-label">Next visit</div>
           <div class="stat-value" style="font-size:var(--text-xl)" id="stat-visit">12 days</div>
-          <div class="stat-meta">Global team, 3 people</div>
+          <div class="stat-meta" id="stat-visit-meta">Global team · 3 people</div>
         </div>
       </div>
- 
+
       <!-- Two-column home layout (stacks on mobile) -->
       <div class="home-layout">
- 
+
         <!-- Left: team schedule preview + activity feed -->
         <div>
           <div class="card mb-4">
@@ -293,7 +296,6 @@
             </div>
           </div>
 
-          
           <!-- Activity feed -->
           <div class="card">
             <div class="card-header">
@@ -307,21 +309,34 @@
             </div>
           </div>
         </div>
- 
-        <!-- Right: availability today + upcoming -->
+
+        <!-- Right: availability today + visits + upcoming + correction -->
         <div>
           <div class="card mb-4">
             <div class="card-header">
               <div class="card-title">Team availability today</div>
             </div>
-            <div class="card-body" id="availability-list" style="padding:var(--space-3) var(--space-5)">
+            <div class="card-body" id="availability-list" style="padding:var(--space-2) var(--space-4)">
               <!-- Populated by JS -->
             </div>
           </div>
- 
+
+          <!-- Upcoming visits card -->
           <div class="card mb-4">
             <div class="card-header">
-              <div class="card-title">Upcoming this week</div>
+              <div>
+                <div class="card-title">Upcoming visits</div>
+                <div class="card-subtitle">Click a visit for full details</div>
+              </div>
+            </div>
+            <div class="card-body" style="padding:0" id="visit-cards">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+          <div class="card mb-4">
+            <div class="card-header">
+              <div class="card-title">This week</div>
             </div>
             <div class="card-body" style="padding:0">
               <div id="upcoming-list">
@@ -329,12 +344,12 @@
               </div>
             </div>
           </div>
- 
-          <!-- Request correction (visible to all) -->
+
+          <!-- Request correction -->
           <div class="card" style="border-left:3px solid var(--color-accent)">
-            <div class="card-body" style="padding:var(--space-4) var(--space-5)">
-              <div style="font-size:var(--text-sm);font-weight:var(--weight-medium);margin-bottom:4px">See something incorrect?</div>
-              <div style="font-size:var(--text-xs);color:var(--color-text-secondary);margin-bottom:12px">Submit a correction request to the country director for review.</div>
+            <div class="card-body" style="padding:var(--space-3) var(--space-4)">
+              <div style="font-size:var(--text-sm);font-weight:var(--weight-medium);margin-bottom:3px">See something incorrect?</div>
+              <div style="font-size:var(--text-xs);color:var(--color-text-secondary);margin-bottom:10px">Submit a correction request to the country director.</div>
               <button class="btn btn-secondary btn-sm" onclick="ChangeRequest.open()">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 Request a correction
@@ -345,7 +360,6 @@
       </div>
     </section>
 
-    
     <!-- ══ TEAM PULSE (Phase 3) ══ -->
     <section class="page" data-page="team-pulse" aria-label="Team pulse">
       <div class="page-header">
@@ -360,7 +374,7 @@
         <span class="coming-soon-phase">Phase 3 — Weeks 5–6</span>
       </div>
     </section>
- 
+
     <!-- ══ RELATIONSHIPS (Phase 3) ══ -->
     <section class="page" data-page="relationships" aria-label="Working relationships">
       <div class="page-header">
@@ -375,7 +389,7 @@
         <span class="coming-soon-phase">Phase 3 — Weeks 5–6</span>
       </div>
     </section>
- 
+
     <!-- ══ LEAVE TRACKER (Phase 3) ══ -->
     <section class="page" data-page="leave-tracker" aria-label="Leave tracker">
       <div class="page-header">
@@ -390,7 +404,7 @@
         <span class="coming-soon-phase">Phase 3 — Weeks 5–6</span>
       </div>
     </section>
- 
+
     <!-- ══ PROJECTS (Phase 2) ══ -->
     <section class="page" data-page="projects" aria-label="Projects">
       <div class="page-header">
@@ -405,7 +419,7 @@
         <span class="coming-soon-phase">Phase 2 — Weeks 3–4</span>
       </div>
     </section>
- 
+
     <!-- ══ SLACK INTEL (Phase 6) ══ -->
     <section class="page" data-page="slack-intel" aria-label="Slack intelligence">
       <div class="page-header">
@@ -420,7 +434,7 @@
         <span class="coming-soon-phase">Phase 6 — Weeks 11–12</span>
       </div>
     </section>
- 
+
     <!-- ══ VISITS (Phase 7) ══ -->
     <section class="page" data-page="visits" aria-label="Visits">
       <div class="page-header">
@@ -435,7 +449,7 @@
         <span class="coming-soon-phase">Phase 7 — Weeks 13–14</span>
       </div>
     </section>
- 
+
     <!-- ══ OPPORTUNITIES (role-gated) ══ -->
     <section class="page" data-page="opportunities" aria-label="Opportunities">
       <div class="page-header">
@@ -446,7 +460,7 @@
         <!-- Populated by JS — either restricted screen or coming-soon based on role + phase -->
       </div>
     </section>
- 
+
     <!-- ══ FUNDING ANALYSIS (role-gated) ══ -->
     <section class="page" data-page="funding-analysis" aria-label="Funding analysis">
       <div class="page-header">
@@ -457,7 +471,7 @@
         <!-- Populated by JS -->
       </div>
     </section>
- 
+
     <!-- ══ GLOBAL PIPELINE (role-gated) ══ -->
     <section class="page" data-page="global-pipeline" aria-label="Global pipeline">
       <div class="page-header">
@@ -468,27 +482,24 @@
         <!-- Populated by JS -->
       </div>
     </section>
- 
+
   </main>
 </div>
- 
+
 <!-- ── Change request modal ── -->
 <!-- Injected by change-request-modal.js -->
- 
+
 <!-- ── Toast container ── -->
 <div id="toast-container" aria-live="assertive" aria-atomic="true"></div>
 
-<!-- scripts - order matters --- -->
+<!-- ── Scripts — order matters ── -->
 <script src="config/roles.js"></script>
 <script src="config/breakpoints.js"></script>
 <script src="src/components/icons.js"></script>
 <script src="src/components/session.js"></script>
 <script src="src/components/bottom-nav.js"></script>
 <script src="src/components/change-request-modal.js"></script>
-
 <script>
-
-
 
 /* ════════════════════════════════════════
    TOAST SYSTEM
@@ -508,33 +519,33 @@ const Toast = {
     }, duration);
   }
 };
- 
+
 /* ════════════════════════════════════════
    NAVIGATION
    ════════════════════════════════════════ */
 let currentPage = 'home';
- 
+
 function navigate(pageId) {
   const session = Session.get();
   const role = session ? session.role : ROLES.TEAM_MEMBER;
- 
+
   /* Check access */
   if (!canAccess(pageId, role)) {
     renderRestrictedContent(pageId);
   }
- 
+
   /* Deactivate all pages */
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
- 
+
   /* Activate target */
   const target = document.querySelector(`.page[data-page="${pageId}"]`);
   if (target) {
     target.classList.add('active');
     target.scrollIntoView({ behavior: 'instant', block: 'start' });
   }
- 
+
   currentPage = pageId;
- 
+
   /* Update nav active states */
   document.querySelectorAll('.nav-item').forEach(item => {
     item.classList.toggle('active', item.dataset.page === pageId);
@@ -543,23 +554,23 @@ function navigate(pageId) {
   document.querySelectorAll('.bottom-nav-item').forEach(item => {
     item.classList.toggle('active', item.dataset.page === pageId);
   });
- 
+
   /* Sync bottom nav active state */
   if (typeof BottomNav !== 'undefined') BottomNav.setActive(pageId);
- 
+
   /* Close role switcher if open */
   closeRoleSwitcher();
- 
+
   /* Update URL hash for bookmarkability */
   history.replaceState(null, '', `#${pageId}`);
 }
- 
+
 /* Handle back/forward and direct URL hash */
 window.addEventListener('popstate', () => {
   const hash = location.hash.replace('#', '') || 'home';
   navigate(hash);
 });
- 
+
 /* ════════════════════════════════════════
    SIDEBAR & BOTTOM NAV RENDERING
    ════════════════════════════════════════ */
@@ -567,16 +578,16 @@ function renderNav() {
   const session = Session.get();
   const role = session ? session.role : ROLES.TEAM_MEMBER;
   const visibleTabs = getVisibleTabs(role);
- 
+
   /* ── Sidebar sections ── */
   const sidebarNav = document.getElementById('sidebar-nav');
   const sections = { main: 'Navigation', strategy: 'Strategy' };
   let sidebarHtml = '';
- 
+
   Object.entries(sections).forEach(([sectionKey, sectionLabel]) => {
     const sectionTabs = visibleTabs.filter(t => t.section === sectionKey);
     if (!sectionTabs.length) return;
- 
+
     sidebarHtml += `<div class="sidebar-section-label">${sectionLabel}</div>`;
     sectionTabs.forEach(tab => {
       const badgeHtml = (tab.badge > 0)
@@ -594,9 +605,9 @@ function renderNav() {
         </button>`;
     });
   });
- 
+
   sidebarNav.innerHTML = sidebarHtml;
- 
+
   /* ── Bottom nav (mobile) ── */
   const bottomNav = document.getElementById('bottom-nav');
   const bottomTabs = getBottomNavTabs(role);
@@ -611,16 +622,16 @@ function renderNav() {
     </button>
   `).join('');
 }
- 
+
 function openMoreMenu() {
   Toast.show('More menu — coming in phase 2', 'success');
 }
- 
+
 /* ════════════════════════════════════════
    SIDEBAR EXPAND / COLLAPSE
    ════════════════════════════════════════ */
 let sidebarExpanded = false;
- 
+
 function initSidebarToggle() {
   const btn = document.getElementById('sidebar-toggle-btn');
   const expandBtn = document.getElementById('sidebar-expand-btn');
@@ -629,19 +640,19 @@ function initSidebarToggle() {
   const sidebar = document.getElementById('sidebar');
   const app = document.getElementById('app');
   const header = document.getElementById('header');
- 
+
   /* On desktop (1024px+) sidebar starts expanded */
   if (window.innerWidth >= 1024) {
     sidebarExpanded = true;
     sidebar.classList.add('expanded');
   }
- 
+
   function updateExpandIcon() {
     expandIcon.innerHTML = getIcon(sidebarExpanded ? 'chevron-left' : 'chevron-right', 16);
     expandLabel.textContent = sidebarExpanded ? 'Collapse' : 'Expand';
   }
   updateExpandIcon();
- 
+
   btn.addEventListener('click', () => {
     sidebarExpanded = !sidebarExpanded;
     sidebar.classList.toggle('expanded', sidebarExpanded);
@@ -662,10 +673,10 @@ function initSidebarToggle() {
     });
     expandLabel.style.opacity = sidebarExpanded ? '1' : '0';
   });
- 
+
   expandBtn.addEventListener('click', () => btn.click());
 }
- 
+
 /* ════════════════════════════════════════
    ROLE SWITCHER (PHASE 1 DEMO)
    ════════════════════════════════════════ */
@@ -673,7 +684,7 @@ function initRoleSwitcher() {
   const avatarBtn = document.getElementById('avatar-btn');
   const switcher = document.getElementById('role-switcher');
   const list = document.getElementById('role-switcher-list');
- 
+
   /* Populate list */
   function renderList() {
     const current = Session.get();
@@ -692,45 +703,46 @@ function initRoleSwitcher() {
       </button>
     `).join('');
   }
- 
+
   avatarBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     const open = switcher.classList.toggle('open');
     avatarBtn.setAttribute('aria-expanded', open);
     if (open) renderList();
   });
- 
+
   document.addEventListener('click', closeRoleSwitcher);
   switcher.addEventListener('click', e => e.stopPropagation());
 }
- 
+
 function closeRoleSwitcher() {
   document.getElementById('role-switcher').classList.remove('open');
   document.getElementById('avatar-btn').setAttribute('aria-expanded', 'false');
 }
- 
+
 function switchUser(userId) {
   const session = Session.set(userId);
   updateHeaderUser(session);
   renderNav();
   renderRoleGatedContent();
   BottomNav.refresh();
+  updateNotifBadge();
   closeRoleSwitcher();
   Toast.show(`Switched to ${session.name} (${ROLE_LABELS[session.role]})`, 'success');
 }
- 
+
 /* ════════════════════════════════════════
    HEADER USER UPDATE
    ════════════════════════════════════════ */
 function updateHeaderUser(session) {
   document.getElementById('avatar-initials').textContent = session.initials;
   document.getElementById('home-greeting-name').textContent = session.name.split(' ')[0];
- 
+
   const badge = document.getElementById('avatar-role-badge');
   badge.style.background = ROLE_BADGE_COLOURS[session.role] || '#4da06a';
   badge.title = ROLE_LABELS[session.role];
 }
- 
+
 /* ════════════════════════════════════════
    ROLE-GATED CONTENT RENDERING
    ════════════════════════════════════════ */
@@ -742,12 +754,12 @@ function renderRestrictedContent(pageId) {
   };
   const containerId = containers[pageId];
   if (!containerId) return;
- 
+
   const session = Session.get();
   const role = session ? session.role : ROLES.TEAM_MEMBER;
   const container = document.getElementById(containerId);
   if (!container) return;
- 
+
   if (!canAccess(pageId, role)) {
     container.innerHTML = `
       <div class="restricted">
@@ -768,11 +780,11 @@ function renderRestrictedContent(pageId) {
       </div>`;
   }
 }
- 
+
 function renderRoleGatedContent() {
   ['opportunities', 'funding-analysis', 'global-pipeline'].forEach(renderRestrictedContent);
 }
- 
+
 /* ════════════════════════════════════════
    PULSE STRIP
    ════════════════════════════════════════ */
@@ -783,53 +795,153 @@ function updatePulseStrip() {
   document.getElementById('header-date').textContent = now.toLocaleDateString('en-GB', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
   });
- 
+
   /* Simulate last sync time */
   const syncMins = Math.floor(Math.random() * 25) + 3;
   document.getElementById('last-sync-time').textContent = `${syncMins} min ago`;
 }
- 
+
 /* ════════════════════════════════════════
    HOME PAGE — DEMO DATA
    ════════════════════════════════════════ */
+/* ════════════════════════════════════════
+   DEMO DATA — replaced by Sheets API in Phase 2
+   ════════════════════════════════════════ */
 const DEMO_SCHEDULE = [
-  { name: 'Amaka O.',   initials: 'AO', color: 0, status: 'available',
+  { name: 'Amaka O.',  initials: 'AO', color: 0, status: 'available',
     bars: [{ left: '10%', width: '25%', type: 'meeting', label: 'Team sync' },
-           { left: '55%', width: '30%', type: 'focus',   label: 'Strategy doc' }] },
-  { name: 'Chidi N.',   initials: 'CN', color: 1, status: 'busy',
+           { left: '55%', width: '30%', type: 'focus',   label: 'Strategy' }] },
+  { name: 'Chidi N.',  initials: 'CN', color: 1, status: 'busy',
     bars: [{ left: '8%',  width: '18%', type: 'meeting', label: 'Partner call' },
-           { left: '35%', width: '40%', type: 'focus',   label: 'Proposal writing' }] },
-  { name: 'Fatima A.',  initials: 'FA', color: 2, status: 'available',
+           { left: '35%', width: '40%', type: 'focus',   label: 'Proposal' }] },
+  { name: 'Fatima A.', initials: 'FA', color: 2, status: 'available',
     bars: [{ left: '20%', width: '20%', type: 'meeting', label: 'Check-in' }] },
-  { name: 'Emeka O.',   initials: 'EO', color: 3, status: 'leave',
-    bars: [{ left: '0%',  width: '100%', type: 'leave',  label: 'Annual leave' }] },
-  { name: 'Ngozi A.',   initials: 'NA', color: 4, status: 'available',
-    bars: [{ left: '45%', width: '30%', type: 'focus',   label: 'M&E review' }] },
-  { name: 'Bola T.',    initials: 'BT', color: 5, status: 'busy',
-    bars: [{ left: '5%',  width: '20%', type: 'meeting', label: 'Donor briefing' },
+  { name: 'Emeka O.',  initials: 'EO', color: 3, status: 'leave',
+    bars: [{ left: '0%', width: '100%', type: 'leave', label: 'Annual leave' }] },
+  { name: 'Ngozi A.',  initials: 'NA', color: 4, status: 'available',
+    bars: [{ left: '45%', width: '30%', type: 'focus', label: 'M&E review' }] },
+  { name: 'Bola T.',   initials: 'BT', color: 5, status: 'busy',
+    bars: [{ left: '5%',  width: '20%', type: 'meeting', label: 'Donor brief' },
            { left: '30%', width: '15%', type: 'meeting', label: 'Internal' },
-           { left: '60%', width: '25%', type: 'focus',   label: 'Data analysis' }] },
+           { left: '60%', width: '25%', type: 'focus',   label: 'Data' }] },
 ];
- 
+
+/* Activity feed — now includes folder path and clickable Drive URL */
 const DEMO_FEED = [
-  { color: 'var(--green-500)',  text: 'Chidi N. uploaded the Q2 energy sector opportunity brief to Drive',    time: '2 hours ago' },
-  { color: 'var(--blue-500)',   text: 'Amaka O. approved the leave request from Emeka O.',                   time: '3 hours ago' },
-  { color: 'var(--amber-500)',  text: 'New RFP flagged in Slack: USAID rural energy access — Nigeria focus', time: '5 hours ago' },
-  { color: 'var(--green-500)',  text: 'Project WASH-NG milestone marked complete by Fatima A.',              time: 'Yesterday' },
-  { color: 'var(--slate-400)',  text: 'Global team visit confirmed — 3 people, arriving in 12 days',         time: 'Yesterday' },
+  {
+    color: 'var(--green-500)',
+    text: 'Chidi N. uploaded the Q2 energy sector opportunity brief',
+    folder: 'Drive / Nigeria / Energy / Opportunities',
+    url: 'https://drive.google.com',
+    time: '2 hours ago',
+  },
+  {
+    color: 'var(--blue-500)',
+    text: 'Amaka O. approved the leave request from Emeka O.',
+    folder: null, url: null,
+    time: '3 hours ago',
+  },
+  {
+    color: 'var(--amber-500)',
+    text: 'New RFP flagged in Slack: USAID rural energy access — Nigeria',
+    folder: 'Drive / Nigeria / BD / RFPs',
+    url: 'https://drive.google.com',
+    time: '5 hours ago',
+  },
+  {
+    color: 'var(--green-500)',
+    text: 'WASH-NG milestone marked complete by Fatima A.',
+    folder: 'Drive / Projects / WASH-NG / Reports',
+    url: 'https://drive.google.com',
+    time: 'Yesterday',
+  },
+  {
+    color: 'var(--slate-400)',
+    text: 'Global team visit confirmed — 3 people arriving in 12 days',
+    folder: null, url: null,
+    time: 'Yesterday',
+  },
 ];
- 
+
+/* Upcoming events — includes travel type */
 const DEMO_UPCOMING = [
-  { label: 'All-team sync',         day: 'Tomorrow',  time: '10:00 AM', type: 'meeting' },
-  { label: 'USAID partner call',    day: 'Wed',       time: '2:00 PM',  type: 'external' },
+  { label: 'All-team sync',          day: 'Tomorrow', time: '10:00 AM', type: 'meeting' },
+  { label: 'USAID partner call',     day: 'Wed',      time: '2:00 PM',  type: 'external' },
+  { label: 'Chidi — Abuja travel',   day: 'Thu',      time: 'Departs',  type: 'travel' },
   { label: 'Monthly country report', day: 'Fri',      time: 'Due',      type: 'deadline' },
 ];
- 
+
+/* Visits data — detailed, replaces stat card */
+const DEMO_VISITS = [
+  {
+    id: 'v1',
+    visitors: [
+      { name: 'Sarah Mensah',    role: 'Global Partnerships Director', country: 'Switzerland' },
+      { name: 'James Okafor',    role: 'Regional Director, West Africa', country: 'Ghana' },
+      { name: 'Priya Nair',      role: 'MEL Specialist', country: 'Kenya' },
+    ],
+    arrival: '9 Jul 2025',
+    departure: '14 Jul 2025',
+    daysAway: 12,
+    purpose: 'Country strategy review, partner mapping, and project site visits',
+    assignedContact: 'Amaka Osei',
+    appointments: [
+      { date: '9 Jul',  desc: 'Arrival · airport pickup · office briefing' },
+      { date: '10 Jul', desc: 'Strategy review session — all Nigeria team' },
+      { date: '11 Jul', desc: 'Partner meetings: REAN, ASES Nigeria, GIZ' },
+      { date: '12 Jul', desc: 'Field visit — Kano solar project site' },
+      { date: '13 Jul', desc: 'Stakeholder dinner · BOPinc Lagos network' },
+      { date: '14 Jul', desc: 'Debrief · departures' },
+    ],
+    notes: 'Sarah needs hotel near Victoria Island. James has a dietary requirement — no pork.',
+  },
+  {
+    id: 'v2',
+    visitors: [
+      { name: 'Tom Adeyemi', role: 'Finance Lead', country: 'UK' },
+    ],
+    arrival: '22 Jul 2025',
+    departure: '24 Jul 2025',
+    daysAway: 25,
+    purpose: 'Q2 financial review and grant compliance audit',
+    assignedContact: 'Emeka Okonkwo',
+    appointments: [
+      { date: '22 Jul', desc: 'Arrival · finance team briefing' },
+      { date: '23 Jul', desc: 'Grant compliance review — full day' },
+      { date: '24 Jul', desc: 'Wrap-up · departure' },
+    ],
+    notes: 'Documents needed: Q2 expenditure reports for all active grants.',
+  },
+];
+
+/* Notification alerts per user — Phase 6 replaces with live Slack data */
+const DEMO_NOTIFICATIONS = {
+  'u1': [ /* Country director */
+    { type: 'urgent',  text: '3 correction requests awaiting your review', time: 'Now' },
+    { type: 'meeting', text: 'All-team sync tomorrow at 10:00 AM', time: 'Tomorrow' },
+    { type: 'visit',   text: 'Sarah Mensah visit in 12 days — review agenda', time: '12 days' },
+  ],
+  'u2': [ /* Partnerships lead */
+    { type: 'urgent',  text: 'USAID RFP closing date in 8 days — action needed', time: '8 days' },
+    { type: 'travel',  text: 'Your Abuja travel departs Thursday', time: 'Thu' },
+    { type: 'meeting', text: 'USAID partner call Wednesday 2:00 PM', time: 'Wed' },
+  ],
+  'default': [
+    { type: 'meeting', text: 'All-team sync tomorrow at 10:00 AM', time: 'Tomorrow' },
+    { type: 'deadline', text: 'Monthly country report due Friday', time: 'Fri' },
+    { type: 'visit',   text: 'Global team visiting in 12 days', time: '12 days' },
+  ],
+};
+
+/* ════════════════════════════════════════
+   RENDER FUNCTIONS
+   ════════════════════════════════════════ */
 function renderHomeSchedule() {
   const container = document.getElementById('home-schedule');
   container.innerHTML = DEMO_SCHEDULE.map(person => `
     <div class="schedule-person">
-      <div class="avatar avatar-sm avatar-${person.color}" aria-hidden="true">${person.initials}</div>
+      <div class="avatar avatar-sm avatar-${person.color}" aria-hidden="true"
+        style="width:22px;height:22px;font-size:9px;flex-shrink:0">${person.initials}</div>
       <div class="schedule-bars" role="img" aria-label="${person.name} schedule">
         ${person.bars.map(bar => `
           <div class="schedule-bar bar-${bar.type}"
@@ -837,30 +949,33 @@ function renderHomeSchedule() {
             title="${bar.label}">${bar.label}</div>
         `).join('')}
       </div>
-      <span class="avail-dot dot-${person.status}" aria-label="${person.status}" title="${person.status}"></span>
+      <span class="avail-dot dot-${person.status}" title="${person.status}" aria-label="${person.status}"
+        style="width:6px;height:6px;flex-shrink:0"></span>
     </div>
   `).join('');
 }
- 
+
 function renderAvailability() {
   const container = document.getElementById('availability-list');
   container.innerHTML = DEMO_SCHEDULE.map(person => `
-    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--color-border)">
-      <div class="avatar avatar-sm avatar-${person.color}" aria-hidden="true">${person.initials}</div>
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--color-border)">
+      <div class="avatar avatar-sm avatar-${person.color}" aria-hidden="true"
+        style="width:26px;height:26px;font-size:10px;flex-shrink:0">${person.initials}</div>
       <div style="flex:1;font-size:var(--text-sm);font-weight:var(--weight-medium)">${person.name}</div>
       <span class="badge ${
         person.status === 'available' ? 'badge-green' :
         person.status === 'busy'      ? 'badge-amber' :
         person.status === 'leave'     ? 'badge-red'   : 'badge-slate'
-      }">${
+      }" style="font-size:10px">${
         person.status === 'available' ? 'Available' :
         person.status === 'busy'      ? 'In meetings' :
         person.status === 'leave'     ? 'On leave' : 'Offline'
       }</span>
     </div>
-  `).join('').replace(/style="[^"]*border-bottom[^"]*"(?=[^<]*<\/div>\s*$)/, 'style="padding:8px 0"');
+  `).join('');
 }
- 
+
+/* Activity feed — with Drive folder path and clickable link */
 function renderActivityFeed() {
   const container = document.getElementById('activity-feed');
   container.innerHTML = DEMO_FEED.map(item => `
@@ -868,66 +983,302 @@ function renderActivityFeed() {
       <div class="feed-dot" style="background:${item.color}" aria-hidden="true"></div>
       <div class="feed-body">
         <div class="feed-text">${item.text}</div>
-        <div class="feed-time">${getIcon('clock', 12)} ${item.time}</div>
+        ${item.folder && item.url ? `
+          <a href="${item.url}" target="_blank" rel="noopener noreferrer"
+            style="display:inline-flex;align-items:center;gap:4px;margin-top:4px;
+              font-size:10px;color:var(--color-accent);background:var(--color-accent-light);
+              padding:2px 7px;border-radius:4px;text-decoration:none;border:0.5px solid var(--green-200)">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+            </svg>
+            ${item.folder}
+            <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+              <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+            </svg>
+          </a>` : ''}
+        <div class="feed-time" style="margin-top:3px">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+          ${item.time}
+        </div>
       </div>
     </div>
   `).join('');
 }
- 
+
+/* Upcoming — with travel type icon */
 function renderUpcoming() {
   const container = document.getElementById('upcoming-list');
-  const typeIcon = { meeting: '👥', external: '🤝', deadline: '⚠️' };
+  const typeIcon = { meeting: '👥', external: '🤝', deadline: '⚠️', travel: '✈️' };
+  const typeColor = { meeting: 'badge-green', external: 'badge-blue', deadline: 'badge-red', travel: 'badge-amber' };
   container.innerHTML = DEMO_UPCOMING.map(item => `
-    <div style="display:flex;align-items:center;gap:12px;padding:10px var(--space-5);border-bottom:1px solid var(--color-border)">
-      <span style="font-size:18px;flex-shrink:0" aria-hidden="true">${typeIcon[item.type]}</span>
+    <div style="display:flex;align-items:center;gap:10px;padding:8px var(--space-4);
+      border-bottom:1px solid var(--color-border)">
+      <span style="font-size:16px;flex-shrink:0" aria-hidden="true">${typeIcon[item.type]}</span>
       <div style="flex:1;min-width:0">
-        <div style="font-size:var(--text-sm);font-weight:var(--weight-medium);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.label}</div>
+        <div style="font-size:var(--text-sm);font-weight:var(--weight-medium);
+          white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.label}</div>
         <div style="font-size:var(--text-xs);color:var(--color-text-secondary)">${item.day} · ${item.time}</div>
       </div>
+      <span class="badge ${typeColor[item.type]}" style="font-size:10px;flex-shrink:0">${item.type}</span>
     </div>
   `).join('');
 }
- 
+
+/* Visit cards on home page */
+function renderVisitCards() {
+  const container = document.getElementById('visit-cards');
+  if (!container) return;
+  container.innerHTML = DEMO_VISITS.map(visit => {
+    const lead = visit.visitors[0];
+    const extra = visit.visitors.length > 1 ? `+${visit.visitors.length - 1} more` : '';
+    return `
+      <div onclick="openVisitDetail(DEMO_VISITS.find(v=>v.id==='${visit.id}'))"
+        style="display:flex;align-items:center;gap:12px;padding:10px var(--space-4);
+          border-bottom:1px solid var(--color-border);cursor:pointer;
+          transition:background var(--transition-fast)"
+        onmouseenter="this.style.background='var(--color-surface-2)'"
+        onmouseleave="this.style.background=''"
+        role="button" tabindex="0"
+        onkeydown="if(event.key==='Enter')openVisitDetail(DEMO_VISITS.find(v=>v.id==='${visit.id}'))">
+        <div style="width:36px;height:36px;border-radius:50%;background:#f5f3ff;
+          display:flex;align-items:center;justify-content:center;
+          font-size:18px;flex-shrink:0" aria-hidden="true">✈️</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:var(--text-sm);font-weight:var(--weight-medium)">
+            ${lead.name}${extra ? `<span style="font-size:10px;color:var(--color-text-secondary);
+              margin-left:5px">${extra}</span>` : ''}
+          </div>
+          <div style="font-size:var(--text-xs);color:var(--color-text-secondary)">
+            ${lead.country} · ${visit.arrival} — ${visit.departure}
+          </div>
+          <div style="font-size:10px;color:var(--color-text-tertiary);
+            white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px">
+            ${visit.purpose}
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:var(--text-xl);font-weight:600;color:var(--color-text-primary);
+            line-height:1">${visit.daysAway}</div>
+          <div style="font-size:9px;color:var(--color-text-secondary);text-transform:uppercase;
+            letter-spacing:0.05em">days</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+/* Visit detail modal */
+function openVisitDetail(visit) {
+  if (!visit) return;
+  const existing = document.getElementById('visit-detail-overlay');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'visit-detail-overlay';
+  overlay.className = 'modal-overlay';
+  overlay.setAttribute('role', 'dialog');
+  overlay.setAttribute('aria-modal', 'true');
+  overlay.setAttribute('aria-label', 'Visit details');
+
+  const visitorsHtml = visit.visitors.map(v => `
+    <div style="display:flex;align-items:center;gap:10px;padding:6px 0">
+      <div class="avatar avatar-sm avatar-${Math.floor(Math.random()*8)}"
+        style="width:30px;height:30px;font-size:11px;flex-shrink:0">
+        ${v.name.split(' ').map(n=>n[0]).join('')}
+      </div>
+      <div>
+        <div style="font-size:var(--text-sm);font-weight:var(--weight-medium)">${v.name}</div>
+        <div style="font-size:var(--text-xs);color:var(--color-text-secondary)">${v.role} · ${v.country}</div>
+      </div>
+    </div>
+  `).join('');
+
+  const apptHtml = visit.appointments.map(a => `
+    <div style="display:flex;gap:12px;padding:6px 0;border-bottom:1px solid var(--color-border)">
+      <div style="font-size:var(--text-xs);font-weight:500;color:var(--color-accent);
+        min-width:40px;flex-shrink:0;padding-top:1px">${a.date}</div>
+      <div style="font-size:var(--text-sm);color:var(--color-text-primary)">${a.desc}</div>
+    </div>
+  `).join('');
+
+  overlay.innerHTML = `
+    <div class="modal" style="max-width:540px">
+      <div class="modal-drag-handle"></div>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:var(--space-4)">
+        <div>
+          <div style="font-size:var(--text-xl);font-weight:600">${visit.visitors[0].name.split(' ')[0]}'s visit</div>
+          <div style="font-size:var(--text-sm);color:var(--color-text-secondary)">
+            ${visit.arrival} — ${visit.departure} · ${visit.daysAway} days away
+          </div>
+        </div>
+        <button onclick="document.getElementById('visit-detail-overlay').classList.remove('open')"
+          style="background:var(--color-surface-2);border:none;border-radius:50%;
+            width:28px;height:28px;cursor:pointer;font-size:16px;
+            display:flex;align-items:center;justify-content:center;color:var(--color-text-secondary)"
+          aria-label="Close">✕</button>
+      </div>
+
+      <div style="font-size:var(--text-xs);font-weight:500;color:var(--color-text-secondary);
+        text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Visitors</div>
+      <div style="margin-bottom:var(--space-4)">${visitorsHtml}</div>
+
+      <div style="font-size:var(--text-xs);font-weight:500;color:var(--color-text-secondary);
+        text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Purpose</div>
+      <div style="font-size:var(--text-sm);margin-bottom:var(--space-4);
+        padding:10px 12px;background:var(--color-surface-2);border-radius:var(--radius-md)">
+        ${visit.purpose}
+      </div>
+
+      <div style="display:flex;gap:var(--space-4);margin-bottom:var(--space-4)">
+        <div style="flex:1;padding:10px 12px;background:var(--color-accent-light);
+          border-radius:var(--radius-md);border:1px solid var(--green-200)">
+          <div style="font-size:10px;font-weight:500;color:var(--color-accent);
+            text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Country contact</div>
+          <div style="font-size:var(--text-sm);font-weight:500">${visit.assignedContact}</div>
+        </div>
+      </div>
+
+      <div style="font-size:var(--text-xs);font-weight:500;color:var(--color-text-secondary);
+        text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">In-country schedule</div>
+      <div style="margin-bottom:var(--space-4);max-height:200px;overflow-y:auto">${apptHtml}</div>
+
+      ${visit.notes ? `
+        <div style="padding:10px 12px;background:var(--amber-50);border-radius:var(--radius-md);
+          border-left:3px solid var(--amber-400);font-size:var(--text-xs);
+          color:var(--color-text-secondary)">
+          <strong style="color:var(--amber-900)">Notes: </strong>${visit.notes}
+        </div>` : ''}
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
+  requestAnimationFrame(() => overlay.classList.add('open'));
+}
+
+/* Notification panel */
+function initNotificationBell() {
+  const btn = document.getElementById('notif-btn');
+  if (!btn) return;
+
+  const panel = document.createElement('div');
+  panel.id = 'notif-panel';
+  panel.setAttribute('role', 'dialog');
+  panel.setAttribute('aria-label', 'Notifications');
+  panel.style.cssText = `
+    position:fixed;top:calc(var(--pulse-height) + var(--header-height) + 8px);
+    right:16px;width:320px;max-height:400px;overflow-y:auto;
+    background:var(--color-surface);border:1px solid var(--color-border);
+    border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);
+    z-index:var(--z-overlay);display:none;
+  `;
+  document.body.appendChild(panel);
+
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    const open = panel.style.display === 'block';
+    panel.style.display = open ? 'none' : 'block';
+    btn.setAttribute('aria-expanded', !open);
+    if (!open) renderNotificationPanel(panel);
+  });
+
+  document.addEventListener('click', () => {
+    panel.style.display = 'none';
+    btn.setAttribute('aria-expanded', 'false');
+  });
+  panel.addEventListener('click', e => e.stopPropagation());
+}
+
+function renderNotificationPanel(panel) {
+  const session = Session.get();
+  const userId = session ? session.userId : null;
+  const alerts = DEMO_NOTIFICATIONS[userId] || DEMO_NOTIFICATIONS['default'];
+  const typeIcon = { urgent: '🔴', meeting: '📅', visit: '✈️', travel: '🗺️', deadline: '⚠️' };
+
+  panel.innerHTML = `
+    <div style="padding:12px 14px;border-bottom:1px solid var(--color-border);
+      display:flex;align-items:center;justify-content:space-between">
+      <div style="font-size:var(--text-sm);font-weight:500">Your alerts</div>
+      <span class="badge badge-amber" style="font-size:10px">${alerts.length} new</span>
+    </div>
+    ${alerts.map(a => `
+      <div style="padding:10px 14px;border-bottom:1px solid var(--color-border);
+        display:flex;gap:10px;align-items:flex-start">
+        <span style="font-size:16px;flex-shrink:0">${typeIcon[a.type] || '📌'}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:var(--text-sm);line-height:1.4">${a.text}</div>
+          <div style="font-size:var(--text-xs);color:var(--color-text-tertiary);margin-top:3px">${a.time}</div>
+        </div>
+      </div>
+    `).join('')}
+    <div style="padding:10px 14px;font-size:var(--text-xs);color:var(--color-text-secondary);
+      text-align:center">Live alerts arrive in Phase 6 — Slack intelligence</div>
+  `;
+}
+
+/* Update notification badge count for logged-in user */
+function updateNotifBadge() {
+  const session = Session.get();
+  const userId = session ? session.userId : null;
+  const alerts = DEMO_NOTIFICATIONS[userId] || DEMO_NOTIFICATIONS['default'];
+  const badge = document.getElementById('notif-badge');
+  if (badge) {
+    badge.textContent = alerts.length;
+    badge.style.display = alerts.length > 0 ? 'flex' : 'none';
+  }
+}
+
 /* ════════════════════════════════════════
    INIT
    ════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', () => {
   /* Init session */
   const session = Session.get();
- 
+
   /* Update header */
   updateHeaderUser(session);
- 
+
   /* Pulse strip */
   updatePulseStrip();
   setInterval(updatePulseStrip, 60000);
- 
+
   /* Navigation */
   renderNav();
   renderRoleGatedContent();
- 
+
   /* Bottom nav (mobile) */
   BottomNav.init();
- 
+
   /* Sidebar toggle */
   initSidebarToggle();
- 
+
   /* Role switcher */
   initRoleSwitcher();
- 
+
   /* Home page content */
   renderHomeSchedule();
   renderAvailability();
   renderActivityFeed();
   renderUpcoming();
- 
+  renderVisitCards();
+
+  /* Notification bell */
+  initNotificationBell();
+  updateNotifBadge();
+
   /* Change request modal */
   ChangeRequest.init();
- 
+
   /* Handle initial URL hash */
   const hash = location.hash.replace('#', '');
   if (hash && hash !== 'home') navigate(hash);
- 
+
   /* Log load */
   console.log('[BOPinc] Dashboard loaded — Phase 1 shell');
   console.log('[BOPinc] Current user:', session.name, '|', ROLE_LABELS[session.role]);
