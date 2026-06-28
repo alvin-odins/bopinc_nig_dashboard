@@ -72,62 +72,6 @@
       font-weight: var(--weight-medium);
     }
 
-    /* Home page specifics */
-    .schedule-strip {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      max-height: 220px;
-      overflow-y: auto;
-    }
-    .schedule-strip::-webkit-scrollbar { width: 3px; }
-    .schedule-strip::-webkit-scrollbar-thumb { background: var(--color-border-strong); border-radius: 2px; }
-    .schedule-person {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 5px 0;
-      border-bottom: 1px solid var(--color-border);
-      flex-shrink: 0;
-    }
-    .schedule-person:last-child { border-bottom: none; }
-    .schedule-bars {
-      flex: 1;
-      height: 20px;
-      background: var(--color-surface-2);
-      border-radius: var(--radius-sm);
-      position: relative;
-      overflow: hidden;
-    }
-    .schedule-bar {
-      position: absolute;
-      top: 2px;
-      height: 16px;
-      border-radius: 3px;
-      font-size: 9px;
-      display: flex;
-      align-items: center;
-      padding: 0 4px;
-      white-space: nowrap;
-      overflow: hidden;
-      color: white;
-      font-weight: 500;
-    }
-    .bar-meeting   { background: var(--green-500); }
-    .bar-focus     { background: var(--blue-500); }
-    .bar-personal  { background: var(--slate-400); }
-    .bar-leave     { background: var(--amber-400); color: var(--amber-900); }
-
-    .avail-dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-    .dot-available { background: var(--color-success); }
-    .dot-busy      { background: var(--color-warning); }
-    .dot-leave     { background: var(--color-danger); }
-    .dot-offline   { background: var(--slate-300); }
-
     @media (min-width: 768px) {
       .role-switcher {
         bottom: 20px;
@@ -138,9 +82,9 @@
 </head>
 <body>
 
-<!-- ── Dev banner (phase 1 only — remove before launch) ── -->
+<!-- ── Configuration notice (hidden when Sheets is configured) ── -->
 <div class="dev-banner" id="dev-banner">
-  Phase 1 shell — click your avatar (top right) to switch roles and test access control
+  Dashboard running in demo mode — <a href="docs/getting-started/03-first-time-setup.md" style="color:var(--amber-700);font-weight:500">configure Google Sheets</a> to see live data · <button onclick="document.getElementById('dev-banner').style.display='none'" style="background:none;border:none;cursor:pointer;color:var(--amber-700);font-size:var(--text-xs);padding:0;text-decoration:underline">dismiss</button>
 </div>
 
 <!-- ── Pulse strip — always visible country awareness bar ── -->
@@ -220,13 +164,16 @@
     <section class="page active" data-page="home" aria-label="Home">
       <div class="page-header">
         <div class="page-eyebrow">Overview</div>
-        <h1 class="page-title">Good morning, <span id="home-greeting-name">team</span></h1>
+        <h1 class="page-title"><span id="home-greeting-text">Good morning</span>, <span id="home-greeting-name">team</span></h1>
         <p class="page-subtitle">Here's what's happening across the Nigeria office today.</p>
       </div>
 
       <!-- Stat cards -->
       <div class="stat-grid" role="list" aria-label="Key stats">
-        <div class="stat-card" role="listitem" onclick="navigate('team-pulse')" title="View team schedules"
+        <div class="stat-card" role="button" tabindex="0"
+          onclick="navigate('team-pulse')"
+          onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();navigate('team-pulse')}"
+          title="View team schedule"
           style="--stat-accent:var(--color-accent);--stat-icon-bg:var(--green-50);--stat-icon-color:var(--green-600)">
           <div class="stat-icon" aria-hidden="true">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -236,7 +183,10 @@
           <div class="stat-meta">2 on leave today</div>
         </div>
 
-        <div class="stat-card" role="listitem" onclick="navigate('projects')" title="View active projects"
+        <div class="stat-card" role="button" tabindex="0"
+          onclick="navigate('projects')"
+          onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();navigate('projects')}"
+          title="View active projects"
           style="--stat-accent:var(--blue-500);--stat-icon-bg:#eff6ff;--stat-icon-color:var(--blue-500)">
           <div class="stat-icon" aria-hidden="true">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
@@ -246,7 +196,10 @@
           <div class="stat-meta">1 ending this month</div>
         </div>
 
-        <div class="stat-card" role="listitem" onclick="navigate('opportunities')" title="View opportunities"
+        <div class="stat-card" role="button" tabindex="0"
+          onclick="navigate('opportunities')"
+          onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();navigate('opportunities')}"
+          title="View opportunities"
           style="--stat-accent:var(--amber-500);--stat-icon-bg:var(--amber-50);--stat-icon-color:var(--amber-600)">
           <div class="stat-icon" aria-hidden="true">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
@@ -256,7 +209,10 @@
           <div class="stat-meta">3 in energy sector</div>
         </div>
 
-        <div class="stat-card" role="listitem" onclick="openVisitDetail(DEMO_VISITS[0])" title="View visit details"
+        <div class="stat-card" role="button" tabindex="0"
+          onclick="openVisitDetail(DEMO_VISITS[0])"
+          onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openVisitDetail(DEMO_VISITS[0])}"
+          title="View next visit details"
           style="--stat-accent:#8b5cf6;--stat-icon-bg:#f5f3ff;--stat-icon-color:#8b5cf6">
           <div class="stat-icon" aria-hidden="true">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21 4 19 2c-2-2-4-2-5.5-.5L10 5 1.8 6.2a.4.4 0 0 0-.2.7l1.7 1.7 1.9.9 2.3 2.3.9 1.9 1.7 1.7a.4.4 0 0 0 .7-.2z"/></svg>
@@ -410,13 +366,17 @@
       <div class="page-header">
         <div class="page-eyebrow">Active work</div>
         <h1 class="page-title">Projects radar</h1>
-        <p class="page-subtitle">Ongoing projects — status, team members, timelines, and health scores.</p>
+        <p class="page-subtitle">Active projects — status, team, timelines, and health scores.</p>
       </div>
-      <div class="coming-soon">
-        <div class="coming-soon-icon" aria-hidden="true">📁</div>
-        <div class="coming-soon-title">Projects radar is coming</div>
-        <p>Live project cards with team member assignments, radar health charts, and export to PDF or Word.</p>
-        <span class="coming-soon-phase">Phase 2 — Weeks 3–4</span>
+      <div id="projects-list">
+        <div id="projects-empty-state" class="coming-soon">
+          <div class="coming-soon-icon" aria-hidden="true">📁</div>
+          <div class="coming-soon-title">No projects yet</div>
+          <p>Active projects will appear here once added through the admin panel or synced from Google Sheets.</p>
+          <a href="admin/data-manager.html" class="btn btn-primary" style="margin-top:var(--space-4)">
+            Add first project →
+          </a>
+        </div>
       </div>
     </section>
 
@@ -495,10 +455,14 @@
 <!-- ── Scripts — order matters ── -->
 <script src="config/roles.js"></script>
 <script src="config/breakpoints.js"></script>
+<script src="config/sheets-config.js"></script>
 <script src="src/components/icons.js"></script>
 <script src="src/components/session.js"></script>
+<script src="src/components/sheets-client.js"></script>
+<script src="src/components/login.js"></script>
 <script src="src/components/bottom-nav.js"></script>
 <script src="src/components/change-request-modal.js"></script>
+<script src="src/components/project-card.js"></script>
 <script>
 
 /* ════════════════════════════════════════
@@ -523,7 +487,7 @@ const Toast = {
 /* ════════════════════════════════════════
    NAVIGATION
    ════════════════════════════════════════ */
-let currentPage = 'home';
+window.currentPage = 'home';
 
 function navigate(pageId) {
   const session = Session.get();
@@ -544,7 +508,7 @@ function navigate(pageId) {
     target.scrollIntoView({ behavior: 'instant', block: 'start' });
   }
 
-  currentPage = pageId;
+  window.currentPage = pageId;
 
   /* Update nav active states */
   document.querySelectorAll('.nav-item').forEach(item => {
@@ -594,9 +558,9 @@ function renderNav() {
         ? `<span class="nav-badge" aria-label="${tab.badge} unread">${tab.badge}</span>`
         : '';
       sidebarHtml += `
-        <button class="nav-item${tab.id === currentPage ? ' active' : ''}"
+        <button class="nav-item${tab.id === window.currentPage ? ' active' : ''}"
           data-page="${tab.id}"
-          aria-current="${tab.id === currentPage ? 'page' : 'false'}"
+          aria-current="${tab.id === window.currentPage ? 'page' : 'false'}"
           onclick="navigate('${tab.id}')"
           title="${tab.label}">
           <span class="nav-icon" aria-hidden="true">${getIcon(tab.icon, 20)}</span>
@@ -612,11 +576,11 @@ function renderNav() {
   const bottomNav = document.getElementById('bottom-nav');
   const bottomTabs = getBottomNavTabs(role);
   bottomNav.innerHTML = bottomTabs.map(tab => `
-    <button class="bottom-nav-item${tab.id === currentPage ? ' active' : ''}"
+    <button class="bottom-nav-item${tab.id === window.currentPage ? ' active' : ''}"
       data-page="${tab.id}"
       onclick="${tab.id === 'more' ? 'openMoreMenu()' : `navigate('${tab.id}')`}"
       aria-label="${tab.label}"
-      ${tab.id === currentPage ? 'aria-current="page"' : ''}>
+      ${tab.id === window.currentPage ? 'aria-current="page"' : ''}>
       ${getIcon(tab.icon, 22)}
       <span>${tab.label}</span>
     </button>
@@ -675,23 +639,37 @@ function initSidebarToggle() {
   });
 
   expandBtn.addEventListener('click', () => btn.click());
+
+  /* ── Keyboard navigation: arrow keys move focus between sidebar nav items ── */
+  const sidebarNav = document.getElementById('sidebar-nav');
+  sidebarNav.addEventListener('keydown', e => {
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+    e.preventDefault();
+    const items = [...sidebarNav.querySelectorAll('.nav-item:not([disabled])')];
+    const idx   = items.indexOf(document.activeElement);
+    if (idx === -1) { items[0]?.focus(); return; }
+    const next  = e.key === 'ArrowDown'
+      ? items[(idx + 1) % items.length]
+      : items[(idx - 1 + items.length) % items.length];
+    next?.focus();
+  });
 }
 
 /* ════════════════════════════════════════
-   ROLE SWITCHER (PHASE 1 DEMO)
+   ROLE SWITCHER (DEMO MODE ONLY)
    ════════════════════════════════════════ */
 function initRoleSwitcher() {
   const avatarBtn = document.getElementById('avatar-btn');
-  const switcher = document.getElementById('role-switcher');
-  const list = document.getElementById('role-switcher-list');
+  const switcher  = document.getElementById('role-switcher');
+  const list      = document.getElementById('role-switcher-list');
 
-  /* Populate list */
   function renderList() {
     const current = Session.get();
-    list.innerHTML = Session.getDemoUsers().map(user => `
+    const users   = Session.getDemoUsers();
+    list.innerHTML = users.map((user, idx) => `
       <button class="role-user-btn${current && current.userId === user.id ? ' current' : ''}"
-        onclick="switchUser('${user.id}')">
-        <div class="avatar avatar-sm avatar-${Session.getDemoUsers().indexOf(user) % 8}"
+        data-userid="${user.id}">
+        <div class="avatar avatar-sm avatar-${idx % 8}"
           aria-hidden="true">${user.initials}</div>
         <div>
           <div class="role-user-name">${user.name}</div>
@@ -702,6 +680,11 @@ function initRoleSwitcher() {
           : ''}
       </button>
     `).join('');
+
+    /* Wire clicks after rendering — avoids inline onclick with string arg */
+    list.querySelectorAll('.role-user-btn').forEach(btn => {
+      btn.addEventListener('click', () => switchUser(btn.dataset.userid));
+    });
   }
 
   avatarBtn.addEventListener('click', (e) => {
@@ -716,12 +699,21 @@ function initRoleSwitcher() {
 }
 
 function closeRoleSwitcher() {
-  document.getElementById('role-switcher').classList.remove('open');
-  document.getElementById('avatar-btn').setAttribute('aria-expanded', 'false');
+  const switcher = document.getElementById('role-switcher');
+  const avatarBtn = document.getElementById('avatar-btn');
+  if (switcher)  switcher.classList.remove('open');
+  if (avatarBtn) avatarBtn.setAttribute('aria-expanded', 'false');
 }
 
+/* switchUser — looks up full user object from DEMO_USERS before calling Session.set() */
 function switchUser(userId) {
-  const session = Session.set(userId);
+  const users   = Session.getDemoUsers();
+  const userObj = users.find(u => u.id === userId);
+  if (!userObj) {
+    console.warn('[switchUser] User not found:', userId);
+    return;
+  }
+  const session = Session.set(userObj);   /* pass full object — Session.set() expects this */
   updateHeaderUser(session);
   renderNav();
   renderRoleGatedContent();
@@ -734,9 +726,18 @@ function switchUser(userId) {
 /* ════════════════════════════════════════
    HEADER USER UPDATE
    ════════════════════════════════════════ */
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
 function updateHeaderUser(session) {
   document.getElementById('avatar-initials').textContent = session.initials;
   document.getElementById('home-greeting-name').textContent = session.name.split(' ')[0];
+  const greetEl = document.getElementById('home-greeting-text');
+  if (greetEl) greetEl.textContent = getGreeting();
 
   const badge = document.getElementById('avatar-role-badge');
   badge.style.background = ROLE_BADGE_COLOURS[session.role] || '#4da06a';
@@ -1173,7 +1174,7 @@ function initNotificationBell() {
   panel.setAttribute('aria-label', 'Notifications');
   panel.style.cssText = `
     position:fixed;top:calc(var(--pulse-height) + var(--header-height) + 8px);
-    right:16px;width:320px;max-height:400px;overflow-y:auto;
+    right:12px;width:min(320px,calc(100vw - 24px));max-height:400px;overflow-y:auto;
     background:var(--color-surface);border:1px solid var(--color-border);
     border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);
     z-index:var(--z-overlay);display:none;
@@ -1234,55 +1235,134 @@ function updateNotifBadge() {
   }
 }
 
+
 /* ════════════════════════════════════════
-   INIT
+   BOOT — called after login is confirmed
    ════════════════════════════════════════ */
-document.addEventListener('DOMContentLoaded', () => {
-  /* Init session */
-  const session = Session.get();
-
-  /* Update header */
+async function bootDashboard(session) {
   updateHeaderUser(session);
-
-  /* Pulse strip */
-  updatePulseStrip();
-  setInterval(updatePulseStrip, 60000);
-
-  /* Navigation */
   renderNav();
   renderRoleGatedContent();
-
-  /* Bottom nav (mobile) */
+  initSidebarToggle();
+  updatePulseStrip();
+  setInterval(() => {
+    updatePulseStrip();
+    const greetEl = document.getElementById('home-greeting-text');
+    if (greetEl) greetEl.textContent = getGreeting();
+  }, 60000);
   BottomNav.init();
 
-  /* Sidebar toggle */
-  initSidebarToggle();
+  /* Show role switcher only in demo mode */
+  const sheetsConfigured = SHEETS_CONFIG.DOCUMENT_ID !== 'PASTE_YOUR_SHEETS_ID_HERE';
+  if (!sheetsConfigured) initRoleSwitcher();
 
-  /* Role switcher */
-  initRoleSwitcher();
-
-  /* Home page content */
+  /* Home page content — render immediately from demo data */
   renderHomeSchedule();
   renderAvailability();
   renderActivityFeed();
   renderUpcoming();
   renderVisitCards();
 
-  /* Notification bell */
   initNotificationBell();
   updateNotifBadge();
-
-  /* Change request modal */
   ChangeRequest.init();
 
-  /* Handle initial URL hash */
   const hash = location.hash.replace('#', '');
   if (hash && hash !== 'home') navigate(hash);
 
-  /* Log load */
-  console.log('[BOPinc] Dashboard loaded — Phase 1 shell');
-  console.log('[BOPinc] Current user:', session.name, '|', ROLE_LABELS[session.role]);
+  /* Hide dev banner if Sheets is configured */
+  const banner = document.getElementById('dev-banner');
+  if (banner && sheetsConfigured) banner.style.display = 'none';
+
+  /* Load live data asynchronously */
+  loadLiveData(session);
+
+  console.log('[BOPinc] Dashboard booted — Phase 2');
+  console.log('[BOPinc] User:', session.name, '|', ROLE_LABELS[session.role]);
+  console.log('[BOPinc] Sheets configured:', sheetsConfigured);
+}
+
+/* ── Live data from Sheets ── */
+async function loadLiveData(session) {
+  /* Show skeleton on stat values while fetching live data */
+  const sheetsConfigured = SHEETS_CONFIG.DOCUMENT_ID !== 'PASTE_YOUR_SHEETS_ID_HERE';
+  if (sheetsConfigured) {
+    ['stat-available','stat-projects','stat-opps','stat-visit'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.add('skeleton');
+    });
+  }
+
+  try {
+    const roster = await Session.fetchRoster();
+    if (roster && roster.length > 0 && roster !== DEMO_USERS) {
+      const available = roster.filter(u => !u.status || u.status === 'available').length;
+      const statEl = document.getElementById('stat-available');
+      if (statEl) { statEl.classList.remove('skeleton'); statEl.textContent = `${available}/${roster.length}`; }
+    }
+
+    /* Projects */
+    const projects = await SheetsClient.get(SHEETS_CONFIG.TABS.PROJECTS);
+    const localProjects = JSON.parse(localStorage.getItem('bopinc_local_projects') || '[]');
+    const allProjects = [...(projects || []), ...localProjects];
+    if (allProjects.length > 0) {
+      ProjectCard.renderAll(allProjects, roster || []);
+      const active = allProjects.filter(p => p.status === 'active' || !p.status).length;
+      const statEl = document.getElementById('stat-projects');
+      if (statEl) { statEl.classList.remove('skeleton'); statEl.textContent = active; }
+    }
+
+    /* Visits */
+    const visits = await SheetsClient.get(SHEETS_CONFIG.TABS.VISITS);
+    const localVisits = JSON.parse(localStorage.getItem('bopinc_local_visits') || '[]');
+    const allVisits = [...(visits || []), ...localVisits];
+    if (allVisits.length > 0) {
+      const upcoming = allVisits
+        .map(v => ({ ...v, _days: SheetsClient.daysUntil(v.arrival) }))
+        .filter(v => v._days != null && v._days >= 0)
+        .sort((a, b) => a._days - b._days);
+      if (upcoming.length > 0) {
+        const next = upcoming[0];
+        const statEl = document.getElementById('stat-visit');
+        const metaEl = document.getElementById('stat-visit-meta');
+        if (statEl) { statEl.classList.remove('skeleton'); statEl.textContent = `${next._days} days`; }
+        if (metaEl) {
+          const visitors = SheetsClient.parseVisitors(next.visitorNames || '');
+          metaEl.textContent = `${visitors[0]?.country || ''} · ${visitors.length} ${visitors.length === 1 ? 'person' : 'people'}`;
+        }
+      }
+    }
+
+    /* Update sync time display */
+    const syncEl = document.getElementById('last-sync-time');
+    const syncTime = SheetsClient.lastSynced(SHEETS_CONFIG.TABS.TEAM_ROSTER);
+    if (syncEl && syncTime) syncEl.textContent = syncTime;
+
+  } catch (err) {
+    console.warn('[BOPinc] Live data load error:', err);
+    /* Clear all skeletons so demo data stays visible on error */
+    ['stat-available','stat-projects','stat-opps','stat-visit'].forEach(id => {
+      document.getElementById(id)?.classList.remove('skeleton');
+    });
+  }
+}
+
+/* ════════════════════════════════════════
+   INIT
+   ════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', async () => {
+  const sheetsConfigured = SHEETS_CONFIG.DOCUMENT_ID !== 'PASTE_YOUR_SHEETS_ID_HERE';
+  const session = Session.get();
+
+  if (sheetsConfigured) {
+    const loggedIn = await Login.check();
+    if (!loggedIn) return;
+    bootDashboard(Session.get());
+  } else {
+    bootDashboard(session || Session.set({ ...DEMO_USERS[2] }));
+  }
 });
+
 
 </script>
 </body>
