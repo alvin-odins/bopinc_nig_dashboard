@@ -673,6 +673,14 @@ function navigate(pageId) {
 
   /* Update URL hash for bookmarkability */
   history.replaceState(null, '', `#${pageId}`);
+
+  /* Re-render pages that contain charts — charts need visible DOM dimensions.
+     These pages are initialised at boot with empty containers; re-rendering
+     on navigate ensures the chart SVG has real width to work with. */
+  if (pageId === 'opportunities')    initOpportunitiesPage();
+  if (pageId === 'funding-analysis') initFundingPage();
+  if (pageId === 'team-pulse')       renderPulseChart();
+  if (pageId === 'leave-tracker')    renderLeaveHeatmap();
 }
 
 /* Handle back/forward and direct URL hash */
