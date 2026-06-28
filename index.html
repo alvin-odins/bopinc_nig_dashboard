@@ -1426,53 +1426,74 @@ function initOpportunitiesPage() {
     return;
   }
 
-  const opps = OppsState.opportunities.length > 0 ? OppsState.opportunities : DEMO_OPPORTUNITIES;
+  const opps   = OppsState.opportunities.length > 0 ? OppsState.opportunities : DEMO_OPPORTUNITIES;
+  const fmtVal = v => v >= 1000000 ? `$${(v/1000000).toFixed(1)}M` : `$${(v/1000).toFixed(0)}K`;
 
-  /* Summary stats */
-  const total     = opps.reduce((s, o) => s + (parseFloat(o.value)||0), 0);
-  const active    = opps.filter(o => o.status === 'active' || o.status === 'won');
-  const pipeline  = opps.filter(o => o.status === 'pipeline');
-  const atRisk    = opps.filter(o => o.status === 'at-risk');
-  const fmtVal    = v => v >= 1000000 ? `$${(v/1000000).toFixed(1)}M` : `$${(v/1000).toFixed(0)}K`;
+  /* Totals */
+  const total    = opps.reduce((s,o) => s + (parseFloat(o.value)||0), 0);
+  const active   = opps.filter(o => o.status==='active'||o.status==='won').reduce((s,o)=>s+(parseFloat(o.value)||0),0);
+  const atRisk   = opps.filter(o => o.status==='at-risk').reduce((s,o)=>s+(parseFloat(o.value)||0),0);
+  const avgProb  = Math.round(opps.reduce((s,o)=>s+(parseFloat(o.probability)||0),0) / Math.max(opps.length,1));
 
   container.innerHTML = `
     <!-- Export toolbar -->
-    <div id="opps-export-toolbar"></div>
+    <div id="opps-export-toolbar" style="margin-bottom:var(--space-4)"></div>
 
-    <!-- Summary stat cards -->
-    <div class="stat-grid" style="margin-bottom:var(--space-5)">
-      <div class="stat-card" style="--stat-accent:var(--color-accent)">
-        <div class="stat-label">Total pipeline</div>
-        <div class="stat-value" style="font-size:var(--text-xl)">${fmtVal(total)}</div>
-        <div class="stat-meta">${opps.length} opportunities</div>
+    <!-- Stat strip — compact single row -->
+    <div style="
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
+      gap:var(--space-3);
+      margin-bottom:var(--space-5)">
+
+      <div style="padding:var(--space-3) var(--space-4);background:var(--color-surface);
+        border:1px solid var(--color-border);border-radius:var(--radius-md);
+        border-left:3px solid var(--color-accent)">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;
+          color:var(--color-text-secondary);margin-bottom:4px">Total pipeline</div>
+        <div style="font-size:var(--text-xl);font-weight:700;color:var(--color-text-primary)">${fmtVal(total)}</div>
+        <div style="font-size:10px;color:var(--color-text-tertiary)">${opps.length} opportunities</div>
       </div>
-      <div class="stat-card" style="--stat-accent:#2e6843">
-        <div class="stat-label">Active / won</div>
-        <div class="stat-value" style="font-size:var(--text-xl)">${fmtVal(active.reduce((s,o)=>s+(parseFloat(o.value)||0),0))}</div>
-        <div class="stat-meta">${active.length} opportunities</div>
+
+      <div style="padding:var(--space-3) var(--space-4);background:var(--color-surface);
+        border:1px solid var(--color-border);border-radius:var(--radius-md);
+        border-left:3px solid #2e6843">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;
+          color:var(--color-text-secondary);margin-bottom:4px">Active / won</div>
+        <div style="font-size:var(--text-xl);font-weight:700;color:#2e6843">${fmtVal(active)}</div>
+        <div style="font-size:10px;color:var(--color-text-tertiary)">${opps.filter(o=>o.status==='active'||o.status==='won').length} opportunities</div>
       </div>
-      <div class="stat-card" style="--stat-accent:#d98f0f">
-        <div class="stat-label">At risk</div>
-        <div class="stat-value" style="font-size:var(--text-xl)">${fmtVal(atRisk.reduce((s,o)=>s+(parseFloat(o.value)||0),0))}</div>
-        <div class="stat-meta">${atRisk.length} opportunities</div>
+
+      <div style="padding:var(--space-3) var(--space-4);background:var(--color-surface);
+        border:1px solid var(--color-border);border-radius:var(--radius-md);
+        border-left:3px solid #d97706">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;
+          color:var(--color-text-secondary);margin-bottom:4px">At risk</div>
+        <div style="font-size:var(--text-xl);font-weight:700;color:#d97706">${fmtVal(atRisk)}</div>
+        <div style="font-size:10px;color:var(--color-text-tertiary)">${opps.filter(o=>o.status==='at-risk').length} opportunities</div>
       </div>
-      <div class="stat-card" style="--stat-accent:#1d4ed8">
-        <div class="stat-label">Pipeline</div>
-        <div class="stat-value" style="font-size:var(--text-xl)">${fmtVal(pipeline.reduce((s,o)=>s+(parseFloat(o.value)||0),0))}</div>
-        <div class="stat-meta">${pipeline.length} opportunities</div>
+
+      <div style="padding:var(--space-3) var(--space-4);background:var(--color-surface);
+        border:1px solid var(--color-border);border-radius:var(--radius-md);
+        border-left:3px solid #1d4ed8">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;
+          color:var(--color-text-secondary);margin-bottom:4px">Avg probability</div>
+        <div style="font-size:var(--text-xl);font-weight:700;color:#1d4ed8">${avgProb}%</div>
+        <div style="font-size:10px;color:var(--color-text-tertiary)">weighted win rate</div>
       </div>
+
     </div>
 
-    <!-- Filter row -->
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:var(--space-4)">
-      ${['all','active','pipeline','at-risk','won'].map(s => `
-        <button class="opps-filter-btn ${OppsState.filter===s?'active':''}" data-filter="${s}"
-          style="padding:4px 12px;border-radius:var(--radius-full);font-size:var(--text-xs);
-            font-weight:500;cursor:pointer;border:1px solid var(--color-border);
-            background:${OppsState.filter===s?'var(--color-accent)':'var(--color-surface)'};
-            color:${OppsState.filter===s?'#fff':'var(--color-text-secondary)'};
+    <!-- Status filter pills -->
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:var(--space-4)" id="opps-filter-bar">
+      ${['all','active','pipeline','at-risk','won'].map(st => `
+        <button class="opps-filter-btn" data-filter="${st}"
+          style="padding:4px 14px;border-radius:20px;font-size:11px;font-weight:500;
+            cursor:pointer;border:1px solid var(--color-border);
+            background:${OppsState.filter===st?'var(--color-accent)':'var(--color-surface)'};
+            color:${OppsState.filter===st?'#fff':'var(--color-text-secondary)'};
             transition:all .15s">
-          ${s === 'all' ? 'All' : s.charAt(0).toUpperCase()+s.slice(1)}
+          ${st === 'all' ? 'All' : st.charAt(0).toUpperCase()+st.slice(1)}
         </button>`).join('')}
     </div>
 
@@ -1480,36 +1501,40 @@ function initOpportunitiesPage() {
     <div class="card" style="margin-bottom:var(--space-4)">
       <div class="card-header">
         <div class="card-title">Pipeline map</div>
-        <div class="card-subtitle">Sector × probability — bubble size = funding value</div>
+        <div class="card-subtitle">Sorted by funding value — bar length = value, right column = win probability</div>
       </div>
-      <div class="card-body">
+      <div class="card-body" style="padding:var(--space-4) var(--space-4) var(--space-3)">
         <div id="opps-bubble-chart"></div>
       </div>
     </div>
 
-    <!-- Capacity gap engine -->
-    <div class="card" style="margin-bottom:var(--space-4)">
-      <div class="card-header">
-        <div class="card-title">Capacity gap analysis</div>
-        <div class="card-subtitle">Sectors with open opportunities vs team expertise coverage</div>
+    <!-- Detail panel — appears inline when a bubble is clicked -->
+    <div id="opps-detail-panel" style="display:none;margin-bottom:var(--space-4)">
+      <div style="
+        background:var(--color-surface);
+        border:1px solid var(--color-border);
+        border-radius:var(--radius-lg);
+        padding:var(--space-5)">
+        <div id="opps-detail-content"></div>
       </div>
-      <div class="card-body" id="capacity-gap-container"></div>
     </div>
 
-    <!-- Detail panel -->
-    <div id="opps-detail-panel" style="display:none" class="card">
-      <div class="card-body" id="opps-detail-content"></div>
-    </div>
+    <!-- Capacity gap — collapsed by default, expandable -->
+    <details style="margin-bottom:var(--space-3)">
+      <summary style="
+        font-size:var(--text-sm);font-weight:600;
+        color:var(--color-text-primary);
+        cursor:pointer;padding:var(--space-3) 0;
+        list-style:none;display:flex;align-items:center;gap:6px;
+        border-top:1px solid var(--color-border)">
+        <span>▸</span> Capacity gap analysis
+        <span style="font-size:var(--text-xs);font-weight:400;color:var(--color-text-secondary)">
+          — sectors vs team expertise
+        </span>
+      </summary>
+      <div id="capacity-gap-container" style="padding:var(--space-4) 0"></div>
+    </details>`;
 
-    <!-- Opportunities table -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">All opportunities</div>
-      </div>
-      <div class="card-body" style="padding:0" id="opps-table-container"></div>
-    </div>`;
-
-  /* Wire export toolbar */
   ExportToolbar.render('opps-export-toolbar', {
     title:  'Opportunities',
     pageId: 'opportunities',
@@ -1521,7 +1546,7 @@ function initOpportunitiesPage() {
     })),
   });
 
-  /* Wire filters */
+  /* Wire filter pills */
   container.querySelectorAll('.opps-filter-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       OppsState.filter = btn.dataset.filter;
@@ -1529,62 +1554,29 @@ function initOpportunitiesPage() {
     });
   });
 
-  renderOpportunitiesContent(opps);
+  ChartBubble.render('opps-bubble-chart', opps, {
+    onSelect: opp => showOpportunityDetail(opp),
+  });
+
   renderCapacityGap(opps);
 }
 
 function renderOpportunitiesContent(opps) {
+  /* Update pill styles */
+  document.querySelectorAll('.opps-filter-btn').forEach(btn => {
+    const on = btn.dataset.filter === OppsState.filter;
+    btn.style.background  = on ? 'var(--color-accent)' : 'var(--color-surface)';
+    btn.style.color       = on ? '#fff' : 'var(--color-text-secondary)';
+    btn.style.borderColor = on ? 'var(--color-accent)' : 'var(--color-border)';
+  });
+
   const filtered = OppsState.filter === 'all'
     ? opps
     : opps.filter(o => o.status === OppsState.filter);
 
-  /* Update filter button styles */
-  document.querySelectorAll('.opps-filter-btn').forEach(btn => {
-    const active = btn.dataset.filter === OppsState.filter;
-    btn.style.background = active ? 'var(--color-accent)' : 'var(--color-surface)';
-    btn.style.color      = active ? '#fff' : 'var(--color-text-secondary)';
-    btn.style.borderColor= active ? 'var(--color-accent)' : 'var(--color-border)';
-  });
-
-  /* Bubble chart */
   ChartBubble.render('opps-bubble-chart', filtered, {
     onSelect: opp => showOpportunityDetail(opp),
   });
-
-  /* Table */
-  const container = document.getElementById('opps-table-container');
-  if (!container) return;
-  if (filtered.length === 0) {
-    container.innerHTML = `<div style="padding:var(--space-5);text-align:center;
-      font-size:var(--text-sm);color:var(--color-text-secondary)">
-      No opportunities match this filter.</div>`;
-    return;
-  }
-
-  const statusBadge = s => ({
-    active:   'badge-green', pipeline: 'badge-blue',
-    'at-risk':'badge-amber', won:      'badge-green', closed: 'badge-slate',
-  }[s] || 'badge-slate');
-
-  const fmtVal = v => {
-    const n = parseFloat(v)||0;
-    return n >= 1000000 ? `$${(n/1000000).toFixed(1)}M` : `$${(n/1000).toFixed(0)}K`;
-  };
-
-  container.innerHTML = filtered.map(o => `
-    <div style="display:flex;align-items:center;gap:12px;padding:10px var(--space-5);
-      border-bottom:1px solid var(--color-border);cursor:pointer;transition:background .12s"
-      onmouseenter="this.style.background='var(--color-surface-2)'"
-      onmouseleave="this.style.background=''"
-      onclick="showOpportunityDetail(DEMO_OPPORTUNITIES.find(x=>x.id==='${o.id}') || OppsState.opportunities.find(x=>x.id==='${o.id}'))">
-      <div style="flex:1;min-width:0">
-        <div style="font-size:var(--text-sm);font-weight:600;color:var(--color-text-primary)">${o.name}</div>
-        <div style="font-size:var(--text-xs);color:var(--color-text-secondary)">${o.funder} · ${o.sector} · Deadline ${o.deadline}</div>
-      </div>
-      <div style="font-size:var(--text-sm);font-weight:500;color:var(--color-text-primary)">${fmtVal(o.value)}</div>
-      <div style="font-size:var(--text-xs);color:var(--color-text-secondary);min-width:36px;text-align:right">${o.probability}%</div>
-      <span class="badge ${statusBadge(o.status)}" style="font-size:10px">${o.status}</span>
-    </div>`).join('');
 }
 
 function showOpportunityDetail(opp) {
@@ -1592,40 +1584,56 @@ function showOpportunityDetail(opp) {
   const panel   = document.getElementById('opps-detail-panel');
   const content = document.getElementById('opps-detail-content');
   if (!panel || !content) return;
-  const col     = ChartBubble.STATUS_COLOURS[opp.status] || ChartBubble.STATUS_COLOURS.pipeline;
-  const fmtVal  = v => { const n=parseFloat(v)||0; return n>=1000000?`$${(n/1000000).toFixed(1)}M`:`$${(n/1000).toFixed(0)}K`; };
+
+  const s      = ChartBubble.STATUS[opp.status] || ChartBubble.STATUS.pipeline;
+  const fmtVal = v => { const n=parseFloat(v)||0; return n>=1000000?`$${(n/1000000).toFixed(1)}M`:`$${(n/1000).toFixed(0)}K`; };
+  const days   = opp.deadline ? Math.ceil((new Date(opp.deadline)-new Date())/86400000) : null;
+  const dlColour = days !== null && days < 0 ? '#dc2626' : days !== null && days <= 45 ? '#d97706' : 'var(--color-text-secondary)';
+  const dlLabel  = days !== null && days < 0 ? 'Overdue' : days !== null && days <= 45 ? `${days} days left` : opp.deadline || '—';
 
   content.innerHTML = `
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:var(--space-4)">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;
+      gap:var(--space-4);margin-bottom:var(--space-4)">
       <div>
-        <div style="font-size:var(--text-lg);font-weight:600">${opp.name}</div>
-        <div style="font-size:var(--text-sm);color:var(--color-text-secondary);margin-top:3px">${opp.funder}</div>
+        <div style="font-size:var(--text-lg);font-weight:700;
+          color:var(--color-text-primary);margin-bottom:4px">${opp.name}</div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <span style="background:${s.light};color:${s.text};padding:2px 8px;
+            border-radius:4px;font-size:11px;font-weight:600">${s.label}</span>
+          <span style="background:var(--color-surface-2);padding:2px 8px;
+            border-radius:4px;font-size:11px;color:var(--color-text-secondary)">${opp.sector}</span>
+        </div>
       </div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <span class="badge" style="background:${col.fill};color:${col.text};font-size:11px">${col.label}</span>
-        <button onclick="document.getElementById('opps-detail-panel').style.display='none'"
-          style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--color-text-tertiary)">✕</button>
-      </div>
+      <button onclick="document.getElementById('opps-detail-panel').style.display='none'"
+        style="background:none;border:none;cursor:pointer;font-size:20px;
+          color:var(--color-text-tertiary);flex-shrink:0;padding:0">✕</button>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:var(--space-4)">
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
+      gap:var(--space-3);margin-bottom:var(--space-4)">
       ${[
-        ['Sector', opp.sector],
-        ['Value', fmtVal(opp.value)],
-        ['Probability', opp.probability + '%'],
-        ['Deadline', opp.deadline],
-        ['Team lead', opp.teamLead || '—'],
-      ].map(([l,v])=>`
-        <div style="padding:10px 12px;background:var(--color-surface-2);border-radius:var(--radius-md)">
-          <div style="font-size:10px;color:var(--color-text-secondary);text-transform:uppercase;
-            letter-spacing:.05em;margin-bottom:3px">${l}</div>
-          <div style="font-size:var(--text-sm);font-weight:500">${v}</div>
+        ['Funding value', fmtVal(opp.value), s.fill],
+        ['Win probability', (opp.probability||'—')+'%', null],
+        ['Funder', opp.funder || '—', null],
+        ['Team lead', opp.teamLead || '—', null],
+        ['Deadline', dlLabel, dlColour],
+      ].map(([l,v,col])=>`
+        <div style="padding:var(--space-3);background:var(--color-surface-2);
+          border-radius:var(--radius-md)">
+          <div style="font-size:10px;color:var(--color-text-secondary);
+            text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">${l}</div>
+          <div style="font-size:var(--text-sm);font-weight:600;
+            color:${col || 'var(--color-text-primary)'};">${v}</div>
         </div>`).join('')}
     </div>
-    ${opp.description ? `<div style="font-size:var(--text-sm);color:var(--color-text-secondary);
-      line-height:1.6">${opp.description}</div>` : ''}`;
+
+    ${opp.description ? `
+      <div style="font-size:var(--text-sm);color:var(--color-text-secondary);
+        line-height:1.7;padding-top:var(--space-3);
+        border-top:1px solid var(--color-border)">${opp.description}</div>` : ''}`;
 
   panel.style.display = 'block';
-  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  panel.scrollIntoView({ behavior:'smooth', block:'nearest' });
 }
 
 function renderCapacityGap(opps) {
