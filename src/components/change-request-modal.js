@@ -1,358 +1,1004 @@
 /* ============================================================
-   BOPinc Nigeria Dashboard — Change Request Modal
-
-   Fixes applied:
-   1. Storage: always writes to localStorage 'bopinc_cr_queue'
-      so admin panel can read it. SheetsClient.append used when
-      Apps Script is configured, but localStorage is ALWAYS
-      written as the local source of truth.
-   2. UX: dropdown selection auto-populates current value from
-      live session data and shows a context-appropriate input
-      for the correction value.
+   BOPinc Nigeria Dashboard — Change Request Modal v2
+   
+   Full contextual UX per field type:
+   - Role/job title: shows current role, project assignments with roles, options to add/correct
+   - Project assignment: shows all current projects as cards with links
+   - Leave record: shows all leave entries with status, dates, resume date
+   - Expertise/sector: shows current tags, account cluster, add/update options
+   - Availability status: shows all current status entries, add/edit/delete
+   
+   Storage: always writes to localStorage 'bopinc_cr_queue' (admin reads from here)
+   Also pushes to Sheets if Apps Script URL is configured.
    ============================================================ */
 
 const ChangeRequest = {
 
-  /* ── Field definitions ──
-     Each field knows its label, how to get the current value,
-     and what kind of input to show for the correction.
-  ── */
-  FIELDS: {
-    project_assignment: {
-      label:       'Project assignment',
-      currentFn:   () => {
-        const session = Session.get();
-        return session ? `${session.name} is currently assigned to projects listed on the Projects page` : '';
-      },
-      inputType:   'text',
-      placeholder: 'Which project should you be added to or removed from?',
-      hint:        'e.g. "Add me to WASH-NG Phase 2" or "Remove me from Energy-NG-24"',
-    },
-    expertise_tag: {
-      label:       'Expertise / sector tag',
-      currentFn:   () => {
-        const session = Session.get();
-        return session && session.expertise && session.expertise.length
-          ? session.expertise.join(', ')
-          : 'Not set';
-      },
-      inputType:   'select',
-      options:     ['energy', 'agriculture', 'health', 'wash', 'education',
-                    'finance', 'livelihoods', 'gender', 'monitoring', 'data',
-                    'strategy', 'partnerships'],
-      placeholder: 'Select the correct sector',
-      hint:        'Select all that apply — you can list multiple separated by commas',
-      multi:       true,
-    },
-    leave_record: {
-      label:       'Leave record',
-      currentFn:   () => 'Check your leave entries on the Leave tracker page',
-      inputType:   'text',
-      placeholder: 'e.g. "Annual leave 14–18 Jul 2025 is missing"',
-      hint:        'Include the leave type, start date, and end date',
-    },
-    name_spelling: {
-      label:       'Name spelling',
-      currentFn:   () => {
-        const session = Session.get();
-        return session ? session.name : '';
-      },
-      inputType:   'text',
-      placeholder: 'Correct spelling of your name',
-      hint:        '',
-    },
-    role_title: {
-      label:       'Role / job title',
-      currentFn:   () => {
-        const session = Session.get();
-        return session ? (ROLE_LABELS[session.role] || session.role) : '';
-      },
-      inputType:   'select',
-      options:     ['team_member', 'partnerships_lead', 'country_director'],
-      optionLabels: ['Team member', 'Partnerships lead', 'Country director'],
-      placeholder: 'Select your correct role',
-      hint:        'Role changes require country director approval',
-    },
-    availability_status: {
-      label:       'Availability status',
-      currentFn:   () => 'Check your current status in the Team availability panel',
-      inputType:   'select',
-      options:     ['available', 'busy', 'leave', 'offline'],
-      optionLabels: ['Available', 'In meetings / busy', 'On leave', 'Offline'],
-      placeholder: 'Select your correct status',
-      hint:        '',
-    },
-    other: {
-      label:       'Something else',
-      currentFn:   () => '',
-      inputType:   'text',
-      placeholder: 'Describe what the correct value should be',
-      hint:        '',
-    },
-  },
+  _currentField:  null,
+  _currentValue:  '',
+  _corrections:   [],   /* array of sub-corrections built up in complex fields */
 
-  /* ── Initialise — inject modal HTML into DOM ── */
+  /* ════════════════════════════════════════
+     INIT
+  ════════════════════════════════════════ */
   init() {
-    if (document.getElementById('change-request-overlay')) return;
+    if (document.getElementById('cr-overlay')) return;
 
     const overlay = document.createElement('div');
-    overlay.id = 'change-request-overlay';
+    overlay.id        = 'cr-overlay';
     overlay.className = 'modal-overlay';
     overlay.setAttribute('role', 'dialog');
     overlay.setAttribute('aria-modal', 'true');
-    overlay.setAttribute('aria-labelledby', 'cr-title');
+    overlay.setAttribute('aria-labelledby', 'cr-modal-title');
 
     overlay.innerHTML = `
-      <div class="modal" id="change-request-modal" style="max-width:500px">
-        <div class="modal-drag-handle" aria-hidden="true"></div>
-        <h2 class="modal-title" id="cr-title">Request a correction</h2>
-        <p class="modal-subtitle">
-          Select what needs correcting. We'll show you the current value
-          and ask for the right one. Your request goes to the country director.
-        </p>
+      <div class="modal" id="cr-modal"
+        style="max-width:520px;max-height:88vh;overflow-y:auto;padding:var(--space-5) var(--space-5) var(--space-4)">
 
-        <!-- Step 1: field selector -->
-        <div class="form-group" id="cr-step-1">
-          <label class="form-label" for="cr-field">What needs correcting?</label>
-          <div id="cr-field-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
-            <!-- Populated by JS -->
+        <!-- Header -->
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:var(--space-4)">
+          <div>
+            <div class="modal-drag-handle" style="margin:0 0 var(--space-3)"></div>
+            <h2 style="font-size:var(--text-lg);font-weight:600;margin:0" id="cr-modal-title">
+              Request a correction
+            </h2>
+            <p id="cr-subtitle" style="font-size:var(--text-sm);color:var(--color-text-secondary);margin:4px 0 0">
+              Select what needs correcting and we'll guide you through it.
+            </p>
           </div>
+          <button id="cr-close-btn"
+            style="background:var(--color-surface-2);border:none;border-radius:50%;
+              width:28px;height:28px;cursor:pointer;font-size:15px;display:flex;
+              align-items:center;justify-content:center;color:var(--color-text-secondary);
+              flex-shrink:0;margin-left:12px;margin-top:4px"
+            aria-label="Close">✕</button>
         </div>
 
-        <!-- Step 2: current + correction (shown after field selected) -->
-        <div id="cr-step-2" style="display:none">
-
-          <!-- Current value (read-only, auto-populated) -->
-          <div class="form-group" id="cr-current-group">
-            <label class="form-label">Current value on file</label>
-            <div id="cr-current-display"
-              style="padding:var(--space-3) var(--space-3);
-                background:var(--color-surface-2);border-radius:var(--radius-md);
-                border:1px solid var(--color-border);font-size:var(--text-sm);
-                color:var(--color-text-secondary);min-height:40px;
-                display:flex;align-items:center">
-              —
-            </div>
-          </div>
-
-          <!-- Correction input (dynamic) -->
-          <div class="form-group" id="cr-correct-group">
-            <label class="form-label" for="cr-correct-input" id="cr-correct-label">
-              What should it be?
-            </label>
-            <div id="cr-correct-input-container">
-              <!-- Populated dynamically based on field type -->
-            </div>
-            <div id="cr-hint"
-              style="font-size:var(--text-xs);color:var(--color-text-secondary);margin-top:6px">
-            </div>
-          </div>
-
-          <!-- Optional note -->
-          <div class="form-group">
-            <label class="form-label" for="cr-note">
-              Additional context
-              <span style="color:var(--color-text-tertiary);font-weight:400">(optional)</span>
-            </label>
-            <textarea class="form-textarea" id="cr-note"
-              placeholder="Any extra detail that helps the director decide…"
-              style="min-height:70px"></textarea>
-          </div>
-
-          <!-- Change field link -->
-          <div style="margin-bottom:var(--space-4)">
-            <button id="cr-change-field"
-              style="font-size:var(--text-xs);color:var(--color-accent);
-                background:none;border:none;cursor:pointer;padding:0;text-decoration:underline">
-              ← Choose a different field
-            </button>
-          </div>
+        <!-- Step 1: field picker -->
+        <div id="cr-step-picker">
+          <div style="display:grid;gap:8px" id="cr-field-grid"></div>
         </div>
 
-        <!-- Status (shown after submit) -->
-        <div id="cr-status" style="display:none"
-          class="alert alert-success mb-4" role="status">
-          <span class="alert-icon">✓</span>
-          <div class="alert-body">
-            <div class="alert-title">Request submitted</div>
-            <div>The country director will review this shortly.</div>
-          </div>
+        <!-- Step 2: contextual panel (swapped in by JS) -->
+        <div id="cr-step-context" style="display:none"></div>
+
+        <!-- Status -->
+        <div id="cr-submitted-msg" style="display:none;
+          padding:var(--space-3) var(--space-4);
+          background:var(--color-success-bg);
+          border-left:3px solid var(--color-success);
+          border-radius:var(--radius-md);
+          font-size:var(--text-sm);
+          color:var(--color-success);margin-top:var(--space-3)">
+          ✓ Request submitted — the country director will review this shortly.
         </div>
 
-        <!-- Actions -->
-        <div style="display:flex;gap:var(--space-3);margin-top:var(--space-4)">
-          <button class="btn btn-secondary btn-full" id="cr-cancel">Cancel</button>
-          <button class="btn btn-primary btn-full" id="cr-submit"
-            style="display:none">Submit request</button>
+        <!-- Footer actions -->
+        <div id="cr-footer" style="display:flex;gap:var(--space-2);margin-top:var(--space-4)">
+          <button id="cr-back-btn" class="btn btn-secondary btn-sm" style="display:none">← Back</button>
+          <div style="flex:1"></div>
+          <button id="cr-cancel-btn" class="btn btn-secondary">Cancel</button>
+          <button id="cr-submit-btn" class="btn btn-primary" style="display:none">Submit request</button>
         </div>
       </div>
     `;
 
     document.body.appendChild(overlay);
 
-    /* Wire static events */
-    overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) this.close();
-    });
-    document.getElementById('cr-cancel').addEventListener('click', () => this.close());
-    document.getElementById('cr-submit').addEventListener('click', () => this.submit());
-    document.getElementById('cr-change-field').addEventListener('click', () => this._showStep1());
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && overlay.classList.contains('open')) this.close();
+    overlay.addEventListener('click',  e => { if (e.target === overlay) this.close(); });
+    document.getElementById('cr-close-btn').addEventListener('click',  () => this.close());
+    document.getElementById('cr-cancel-btn').addEventListener('click', () => this.close());
+    document.getElementById('cr-back-btn').addEventListener('click',   () => this._showPicker());
+    document.getElementById('cr-submit-btn').addEventListener('click', () => this.submit());
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && document.getElementById('cr-overlay').classList.contains('open')) this.close();
     });
 
-    /* Render field picker */
-    this._renderFieldPicker();
+    this._renderPicker();
   },
 
-  /* ── Render the field picker grid ── */
-  _renderFieldPicker() {
+  /* ════════════════════════════════════════
+     FIELD PICKER
+  ════════════════════════════════════════ */
+  _FIELDS: [
+    { key: 'role',         icon: '🎭', label: 'Role / job title',       desc: 'Your dashboard role or project role' },
+    { key: 'project',      icon: '📁', label: 'Project assignment',     desc: 'Projects you are on or missing from' },
+    { key: 'leave',        icon: '🗓️', label: 'Leave record',           desc: 'Leave dates, status, or missing entries' },
+    { key: 'expertise',    icon: '🔬', label: 'Expertise / sector tag', desc: 'Your sector skills and account cluster' },
+    { key: 'availability', icon: '🟢', label: 'Availability status',    desc: 'Your current or upcoming availability' },
+    { key: 'other',        icon: '✏️', label: 'Something else',         desc: 'Any other data that looks incorrect' },
+  ],
+
+  _renderPicker() {
     const grid = document.getElementById('cr-field-grid');
+    const session = Session.get();
     if (!grid) return;
-    grid.innerHTML = Object.entries(this.FIELDS).map(([key, def]) => `
-      <button class="cr-field-btn" data-field="${key}"
-        style="display:flex;align-items:center;gap:8px;padding:10px 12px;
+
+    grid.innerHTML = this._FIELDS.map(f => `
+      <button data-field="${f.key}"
+        style="display:flex;align-items:center;gap:12px;padding:12px 14px;
           border:1px solid var(--color-border);border-radius:var(--radius-md);
-          background:var(--color-surface);cursor:pointer;font-size:var(--text-sm);
-          font-weight:var(--weight-medium);color:var(--color-text-primary);
-          text-align:left;transition:all var(--transition-fast);width:100%"
+          background:var(--color-surface);cursor:pointer;text-align:left;
+          width:100%;transition:all 150ms ease"
         onmouseenter="this.style.borderColor='var(--color-accent)';this.style.background='var(--color-accent-light)'"
         onmouseleave="this.style.borderColor='var(--color-border)';this.style.background='var(--color-surface)'">
-        ${def.label}
+        <span style="font-size:20px;flex-shrink:0">${f.icon}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:var(--text-sm);font-weight:500;color:var(--color-text-primary)">${f.label}</div>
+          <div style="font-size:var(--text-xs);color:var(--color-text-secondary)">${f.desc}</div>
+        </div>
+        <span style="color:var(--color-text-tertiary);font-size:14px">›</span>
       </button>
     `).join('');
 
-    grid.querySelectorAll('.cr-field-btn').forEach(btn => {
-      btn.addEventListener('click', () => this._selectField(btn.dataset.field));
+    grid.querySelectorAll('[data-field]').forEach(btn => {
+      btn.addEventListener('click', () => this._openField(btn.dataset.field));
     });
   },
 
-  /* ── User selects a field ── */
-  _selectField(fieldKey) {
-    const def = this.FIELDS[fieldKey];
-    if (!def) return;
+  _showPicker() {
+    document.getElementById('cr-step-picker').style.display  = 'block';
+    document.getElementById('cr-step-context').style.display = 'none';
+    document.getElementById('cr-back-btn').style.display     = 'none';
+    document.getElementById('cr-submit-btn').style.display   = 'none';
+    document.getElementById('cr-submitted-msg').style.display = 'none';
+    this._currentField    = null;
+    this._corrections     = [];
+    const submitBtn = document.getElementById('cr-submit-btn');
+    submitBtn.disabled    = false;
+    submitBtn.textContent = 'Submit request';
+  },
 
+  _showContext(html, fieldKey) {
     this._currentField = fieldKey;
+    const ctx = document.getElementById('cr-step-context');
+    ctx.innerHTML = html;
+    document.getElementById('cr-step-picker').style.display  = 'none';
+    ctx.style.display = 'block';
+    document.getElementById('cr-back-btn').style.display     = 'block';
+    document.getElementById('cr-submit-btn').style.display   = 'block';
+  },
 
-    /* Populate current value */
-    const currentDisplay = document.getElementById('cr-current-display');
-    const currentValue   = def.currentFn();
-    currentDisplay.textContent = currentValue || 'Not set / unavailable';
-    this._currentValue = currentValue;
+  /* ════════════════════════════════════════
+     FIELD: ROLE / JOB TITLE
+  ════════════════════════════════════════ */
+  _openField(key) {
+    const session = Session.get();
+    const s = session || {};
+    const name = s.name || 'You';
 
-    /* Build correction input */
-    const container = document.getElementById('cr-correct-input-container');
-    const hint      = document.getElementById('cr-hint');
+    if      (key === 'role')         this._buildRolePanel(s, name);
+    else if (key === 'project')      this._buildProjectPanel(s, name);
+    else if (key === 'leave')        this._buildLeavePanel(s, name);
+    else if (key === 'expertise')    this._buildExpertisePanel(s, name);
+    else if (key === 'availability') this._buildAvailabilityPanel(s, name);
+    else                             this._buildOtherPanel(s, name);
+  },
 
-    if (def.inputType === 'select' && def.options) {
-      container.innerHTML = `
-        <select class="form-select" id="cr-correct-input" style="font-size:var(--text-base)">
-          <option value="">${def.placeholder}</option>
-          ${def.options.map((opt, i) => `
-            <option value="${opt}">${def.optionLabels ? def.optionLabels[i] : opt}</option>
-          `).join('')}
+  _sectionHead(icon, title, subtitle) {
+    return `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:var(--space-4);
+        padding-bottom:var(--space-3);border-bottom:1px solid var(--color-border)">
+        <span style="font-size:22px">${icon}</span>
+        <div>
+          <div style="font-size:var(--text-base);font-weight:600">${title}</div>
+          <div style="font-size:var(--text-xs);color:var(--color-text-secondary)">${subtitle}</div>
+        </div>
+      </div>`;
+  },
+
+  _infoRow(label, value, accent) {
+    return `
+      <div style="display:flex;justify-content:space-between;align-items:center;
+        padding:8px 0;border-bottom:1px solid var(--color-border)">
+        <span style="font-size:var(--text-xs);color:var(--color-text-secondary)">${label}</span>
+        <span style="font-size:var(--text-sm);font-weight:500;
+          color:${accent || 'var(--color-text-primary)'}">
+          ${value || '—'}
+        </span>
+      </div>`;
+  },
+
+  /* -- Role panel -- */
+  _buildRolePanel(session, name) {
+    /* Get projects this user is on from ProjectCard store */
+    const store = (typeof ProjectCard !== 'undefined' && ProjectCard._store)
+      ? Object.values(ProjectCard._store) : [];
+    const myProjects = store.filter(s => {
+      const members = typeof SheetsClient !== 'undefined'
+        ? SheetsClient.parseTeamMembers(s.project.teamMembers || '')
+        : [];
+      return members.some(m => m.name.toLowerCase().includes((session.name||'').split(' ')[0].toLowerCase()));
+    });
+
+    /* Also check localStorage projects */
+    const localProjects = JSON.parse(localStorage.getItem('bopinc_local_projects') || '[]');
+    const allProjects   = [
+      ...myProjects.map(s => s.project),
+      ...localProjects.filter(p => (p.teamMembers||'').toLowerCase().includes((session.name||'').split(' ')[0].toLowerCase())),
+    ];
+    const uniqueProjects = [...new Map(allProjects.map(p => [p.name, p])).values()];
+
+    const projectRows = uniqueProjects.length > 0
+      ? uniqueProjects.map(p => {
+          const members = typeof SheetsClient !== 'undefined'
+            ? SheetsClient.parseTeamMembers(p.teamMembers || '') : [];
+          const me = members.find(m => m.name.toLowerCase().includes((session.name||'').split(' ')[0].toLowerCase()));
+          const myRole = me ? me.role : 'Team member';
+          return `
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;
+              background:var(--color-surface-2);border-radius:var(--radius-md);margin-bottom:6px">
+              <div style="flex:1;min-width:0">
+                <div style="font-size:var(--text-sm);font-weight:500">${p.name}</div>
+                <div style="font-size:var(--text-xs);color:var(--color-text-secondary)">
+                  Your role: <strong>${myRole}</strong>
+                  ${p.status ? `· <span class="badge badge-${p.status==='active'?'green':'amber'}" style="font-size:9px">${p.status}</span>` : ''}
+                </div>
+              </div>
+            </div>`;
+        }).join('')
+      : `<div style="font-size:var(--text-sm);color:var(--color-text-secondary);
+          padding:10px 0">No projects on record yet.</div>`;
+
+    const roleOptions = [
+      { value:'team_member',       label:'Team member' },
+      { value:'partnerships_lead', label:'Partnerships lead' },
+      { value:'country_director',  label:'Country director' },
+    ];
+
+    const html = `
+      ${this._sectionHead('🎭', 'Role / job title', `Correction for ${name}`)}
+
+      <div style="margin-bottom:var(--space-4)">
+        ${this._infoRow('Your name',           name)}
+        ${this._infoRow('Dashboard role',      ROLE_LABELS[session.role] || session.role, 'var(--color-accent)')}
+        ${this._infoRow('Number of projects',  `${uniqueProjects.length} project${uniqueProjects.length!==1?'s':''}`)}
+      </div>
+
+      <div style="font-size:var(--text-xs);font-weight:500;color:var(--color-text-secondary);
+        text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">
+        Your current projects
+      </div>
+      <div style="margin-bottom:var(--space-4)">${projectRows}</div>
+
+      <div style="font-size:var(--text-xs);font-weight:500;color:var(--color-text-secondary);
+        text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">
+        What needs correcting?
+      </div>
+
+      <div style="display:grid;gap:8px;margin-bottom:var(--space-4)">
+        <label style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;
+          border:1px solid var(--color-border);border-radius:var(--radius-md);cursor:pointer">
+          <input type="radio" name="role-correction-type" value="wrong_dashboard_role" style="margin-top:2px">
+          <div>
+            <div style="font-size:var(--text-sm);font-weight:500">My dashboard role is wrong</div>
+            <div style="font-size:var(--text-xs);color:var(--color-text-secondary)">
+              Change what I can see and access on this dashboard
+            </div>
+          </div>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;
+          border:1px solid var(--color-border);border-radius:var(--radius-md);cursor:pointer">
+          <input type="radio" name="role-correction-type" value="wrong_project_role" style="margin-top:2px">
+          <div>
+            <div style="font-size:var(--text-sm);font-weight:500">My role on a project is wrong</div>
+            <div style="font-size:var(--text-xs);color:var(--color-text-secondary)">
+              Correct the role shown next to my name on a specific project
+            </div>
+          </div>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;
+          border:1px solid var(--color-border);border-radius:var(--radius-md);cursor:pointer">
+          <input type="radio" name="role-correction-type" value="add_project" style="margin-top:2px">
+          <div>
+            <div style="font-size:var(--text-sm);font-weight:500">Add me to another project</div>
+            <div style="font-size:var(--text-xs);color:var(--color-text-secondary)">
+              I am working on a project not shown above
+            </div>
+          </div>
+        </label>
+      </div>
+
+      <!-- Sub-form: changes based on radio selection -->
+      <div id="role-sub-form"></div>
+
+      <div class="form-group">
+        <label class="form-label" for="cr-note-role">Additional context (optional)</label>
+        <textarea class="form-textarea" id="cr-note-role"
+          placeholder="Any extra detail for the country director…"
+          style="min-height:60px"></textarea>
+      </div>
+    `;
+
+    this._showContext(html, 'role');
+
+    /* Wire radio → sub-form */
+    document.querySelectorAll('[name="role-correction-type"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        const sub = document.getElementById('role-sub-form');
+        if (radio.value === 'wrong_dashboard_role') {
+          sub.innerHTML = `
+            <div class="form-group" style="margin-bottom:var(--space-4)">
+              <label class="form-label">Correct dashboard role</label>
+              <select class="form-select" id="role-new-value" style="font-size:var(--text-base)">
+                <option value="">Select correct role…</option>
+                ${roleOptions.map(o => `<option value="${o.value}"${o.value===session.role?' selected':''}>${o.label}</option>`).join('')}
+              </select>
+            </div>`;
+        } else if (radio.value === 'wrong_project_role') {
+          sub.innerHTML = `
+            <div class="form-group" style="margin-bottom:var(--space-4)">
+              <label class="form-label">Which project?</label>
+              <select class="form-select" id="role-project-select" style="font-size:var(--text-base)">
+                <option value="">Select project…</option>
+                ${uniqueProjects.map(p => `<option value="${p.name}">${p.name}</option>`).join('')}
+                <option value="__other">Other / not listed</option>
+              </select>
+              <label class="form-label" style="margin-top:10px">My correct role on this project</label>
+              <input class="form-input" type="text" id="role-project-role"
+                placeholder="e.g. Project Lead, MEL Specialist, Finance Officer"
+                style="font-size:var(--text-base)">
+            </div>`;
+        } else if (radio.value === 'add_project') {
+          sub.innerHTML = `
+            <div class="form-group" style="margin-bottom:var(--space-4)">
+              <label class="form-label">Project name</label>
+              <select class="form-select" id="role-add-project" style="font-size:var(--text-base)">
+                <option value="">Select from existing projects…</option>
+                ${JSON.parse(localStorage.getItem('bopinc_local_projects')||'[]')
+                  .filter(p => !uniqueProjects.find(u => u.name === p.name))
+                  .map(p => `<option value="${p.name}">${p.name}</option>`).join('')}
+                <option value="__adhoc">Ad-hoc task / not in system</option>
+              </select>
+              <div id="role-adhoc-name-wrap" style="display:none;margin-top:8px">
+                <input class="form-input" type="text" id="role-adhoc-name"
+                  placeholder="Describe the task or project name"
+                  style="font-size:var(--text-base)">
+              </div>
+              <label class="form-label" style="margin-top:10px">My role on this project</label>
+              <input class="form-input" type="text" id="role-add-project-role"
+                placeholder="e.g. Technical Advisor, Project Manager"
+                style="font-size:var(--text-base)">
+            </div>`;
+          document.getElementById('role-add-project')?.addEventListener('change', e => {
+            document.getElementById('role-adhoc-name-wrap').style.display =
+              e.target.value === '__adhoc' ? 'block' : 'none';
+          });
+        }
+      });
+    });
+  },
+
+  /* -- Project assignment panel -- */
+  _buildProjectPanel(session, name) {
+    const store = (typeof ProjectCard !== 'undefined' && ProjectCard._store)
+      ? Object.values(ProjectCard._store) : [];
+    const localProjects = JSON.parse(localStorage.getItem('bopinc_local_projects') || '[]');
+
+    /* All projects in the system */
+    const allSystemProjects = [
+      ...store.map(s => s.project),
+      ...localProjects,
+    ];
+    const unique = [...new Map(allSystemProjects.map(p => [p.name, p])).values()];
+
+    /* Projects this user is on */
+    const myProjects = unique.filter(p =>
+      (p.teamMembers || '').toLowerCase()
+        .includes((session.name || '').split(' ')[0].toLowerCase())
+    );
+
+    const projectCard = (p, isOnIt) => `
+      <div style="border:1px solid var(--color-border);border-radius:var(--radius-md);
+        padding:10px 12px;margin-bottom:8px;position:relative">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:var(--text-sm);font-weight:600">${p.name}</div>
+            <div style="font-size:var(--text-xs);color:var(--color-text-secondary);margin-top:2px">
+              ${p.sector ? `<span class="badge badge-blue" style="font-size:9px">${p.sector}</span> · ` : ''}
+              ${p.status || 'active'} ·
+              ${p.endDate ? `ends ${p.endDate}` : 'ongoing'}
+            </div>
+            ${p.lead ? `<div style="font-size:var(--text-xs);color:var(--color-text-secondary);margin-top:3px">Lead: ${p.lead}</div>` : ''}
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;margin-left:10px">
+            <span class="badge ${isOnIt ? 'badge-green' : 'badge-slate'}" style="font-size:9px">
+              ${isOnIt ? '✓ You are on this' : 'Not assigned'}
+            </span>
+            <button data-proj-link="${p.id || p.name}"
+              style="font-size:10px;color:var(--color-accent);background:none;
+                border:none;cursor:pointer;padding:0;text-decoration:underline">
+              View details →
+            </button>
+          </div>
+        </div>
+      </div>`;
+
+    const html = `
+      ${this._sectionHead('📁', 'Project assignment', `Correction for ${name}`)}
+
+      <div style="margin-bottom:var(--space-3)">
+        ${this._infoRow('Your name',            name)}
+        ${this._infoRow('Projects assigned to', `${myProjects.length} of ${unique.length} in system`)}
+      </div>
+
+      <div style="font-size:var(--text-xs);font-weight:500;color:var(--color-text-secondary);
+        text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">
+        All projects in the system
+      </div>
+
+      <div style="max-height:240px;overflow-y:auto;margin-bottom:var(--space-4);padding-right:4px">
+        ${unique.length > 0
+          ? unique.map(p => projectCard(p, myProjects.some(m => m.name === p.name))).join('')
+          : `<div style="font-size:var(--text-sm);color:var(--color-text-secondary);padding:10px 0">
+              No projects in the system yet.</div>`}
+      </div>
+
+      <div style="font-size:var(--text-xs);font-weight:500;color:var(--color-text-secondary);
+        text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">
+        What needs correcting?
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Select the project</label>
+        <select class="form-select" id="proj-cr-select" style="font-size:var(--text-base)">
+          <option value="">Choose a project…</option>
+          ${unique.map(p => `<option value="${p.name}">${p.name}</option>`).join('')}
+          <option value="__new">A project not listed here</option>
         </select>
-        ${def.multi ? `
-          <div style="margin-top:8px;font-size:var(--text-xs);color:var(--color-text-secondary)">
-            Need multiple? Add a note below listing all that apply.
-          </div>` : ''}
-      `;
-    } else {
-      container.innerHTML = `
-        <input class="form-input" type="text" id="cr-correct-input"
-          placeholder="${def.placeholder}"
-          style="font-size:var(--text-base)">
-      `;
-    }
+        <div id="proj-new-name-wrap" style="display:none;margin-top:8px">
+          <input class="form-input" type="text" id="proj-new-name"
+            placeholder="Project name" style="font-size:var(--text-base)">
+        </div>
+      </div>
 
-    hint.textContent = def.hint || '';
+      <div class="form-group">
+        <label class="form-label">What is the issue?</label>
+        <select class="form-select" id="proj-cr-issue" style="font-size:var(--text-base)">
+          <option value="">Select the issue…</option>
+          <option value="add_me">Add me to this project</option>
+          <option value="remove_me">Remove me — I am no longer on it</option>
+          <option value="wrong_role">My role on this project is wrong</option>
+        </select>
+        <div id="proj-role-wrap" style="display:none;margin-top:8px">
+          <input class="form-input" type="text" id="proj-correct-role"
+            placeholder="My correct role e.g. Technical Lead"
+            style="font-size:var(--text-base)">
+        </div>
+      </div>
 
-    /* Show step 2, hide step 1 */
-    document.getElementById('cr-step-1').style.display = 'none';
-    document.getElementById('cr-step-2').style.display = 'block';
-    document.getElementById('cr-submit').style.display = 'block';
+      <div class="form-group">
+        <label class="form-label">Additional context (optional)</label>
+        <textarea class="form-textarea" id="cr-note-project"
+          placeholder="Any extra detail for the director…"
+          style="min-height:60px"></textarea>
+      </div>
+    `;
 
-    /* Focus the correction input */
-    setTimeout(() => {
-      document.getElementById('cr-correct-input')?.focus();
-    }, 50);
+    this._showContext(html, 'project');
+
+    document.getElementById('proj-cr-select')?.addEventListener('change', e => {
+      document.getElementById('proj-new-name-wrap').style.display =
+        e.target.value === '__new' ? 'block' : 'none';
+    });
+    document.getElementById('proj-cr-issue')?.addEventListener('change', e => {
+      document.getElementById('proj-role-wrap').style.display =
+        e.target.value === 'wrong_role' ? 'block' : 'none';
+    });
+
+    /* View details links — navigate to Projects tab */
+    document.querySelectorAll('[data-proj-link]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.close();
+        if (typeof navigate === 'function') navigate('projects');
+      });
+    });
   },
 
-  _showStep1() {
-    document.getElementById('cr-step-1').style.display = 'block';
-    document.getElementById('cr-step-2').style.display = 'none';
-    document.getElementById('cr-submit').style.display = 'none';
-    document.getElementById('cr-note').value = '';
-    this._currentField = null;
-  },
+  /* -- Leave record panel -- */
+  _buildLeavePanel(session, name) {
+    /* Demo leave data — replaced by Sheets calendar-events in Phase 3 */
+    const DEMO_LEAVE = [
+      { id:'l1', type:'Annual leave',  start:'2025-06-02', end:'2025-06-06',
+        submitted:'2025-05-20', status:'approved',  resumeDate:'2025-06-09' },
+      { id:'l2', type:'Sick leave',    start:'2025-04-14', end:'2025-04-14',
+        submitted:'2025-04-14', status:'approved',  resumeDate:'2025-04-15' },
+      { id:'l3', type:'Annual leave',  start:'2025-07-14', end:'2025-07-18',
+        submitted:'2025-06-28', status:'pending',   resumeDate:'2025-07-21' },
+    ];
 
-  /* ── Open the modal ── */
-  open(context = {}) {
-    const overlay = document.getElementById('change-request-overlay');
-    if (!overlay) { this.init(); }
+    const statusBadge = s => {
+      if (s === 'approved')  return `<span class="badge badge-green" style="font-size:9px">Approved</span>`;
+      if (s === 'pending')   return `<span class="badge badge-amber" style="font-size:9px">Under review</span>`;
+      return `<span class="badge badge-red" style="font-size:9px">Not approved</span>`;
+    };
+    const fmtDate = d => d ? new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '—';
 
-    /* Reset to clean state */
-    this._showStep1();
-    document.getElementById('cr-status').style.display = 'none';
-    document.getElementById('cr-submit').disabled  = false;
-    document.getElementById('cr-submit').textContent = 'Submit request';
+    const leaveRows = DEMO_LEAVE.map(l => `
+      <div style="border:1px solid var(--color-border);border-radius:var(--radius-md);
+        padding:10px 12px;margin-bottom:8px">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px">
+          <div style="font-size:var(--text-sm);font-weight:500">${l.type}</div>
+          ${statusBadge(l.status)}
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
+          <div style="font-size:var(--text-xs);color:var(--color-text-secondary)">
+            📅 ${fmtDate(l.start)} → ${fmtDate(l.end)}
+          </div>
+          <div style="font-size:var(--text-xs);color:var(--color-text-secondary)">
+            🔄 Resume: ${fmtDate(l.resumeDate)}
+          </div>
+          <div style="font-size:var(--text-xs);color:var(--color-text-secondary)">
+            Submitted: ${fmtDate(l.submitted)}
+          </div>
+        </div>
+      </div>
+    `).join('');
 
-    /* If a field was pre-specified (e.g. from a card button), jump straight to step 2 */
-    if (context.field && this.FIELDS[context.field]) {
-      this._selectField(context.field);
-      /* Override current value if explicitly provided */
-      if (context.currentValue) {
-        const display = document.getElementById('cr-current-display');
-        if (display) display.textContent = context.currentValue;
-        this._currentValue = context.currentValue;
+    const html = `
+      ${this._sectionHead('🗓️', 'Leave record', `Correction for ${name}`)}
+
+      ${this._infoRow('Team member', name)}
+      <div style="margin-bottom:var(--space-4)"></div>
+
+      <div style="font-size:var(--text-xs);font-weight:500;color:var(--color-text-secondary);
+        text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">
+        Leave on record
+      </div>
+      <div style="max-height:220px;overflow-y:auto;margin-bottom:var(--space-4);padding-right:4px">
+        ${leaveRows}
+      </div>
+
+      <div style="font-size:var(--text-xs);font-weight:500;color:var(--color-text-secondary);
+        text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">
+        What needs correcting?
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Type of correction</label>
+        <select class="form-select" id="leave-cr-type" style="font-size:var(--text-base)">
+          <option value="">Select…</option>
+          <option value="missing">A leave entry is missing</option>
+          <option value="wrong_dates">Dates on an entry are wrong</option>
+          <option value="wrong_status">Status is incorrect</option>
+          <option value="wrong_resume">Resume date is wrong</option>
+          <option value="delete">An entry should be removed</option>
+        </select>
+      </div>
+
+      <div id="leave-sub-form"></div>
+
+      <div class="form-group">
+        <label class="form-label">Additional context (optional)</label>
+        <textarea class="form-textarea" id="cr-note-leave"
+          placeholder="Any extra detail for the director…"
+          style="min-height:60px"></textarea>
+      </div>
+    `;
+
+    this._showContext(html, 'leave');
+
+    document.getElementById('leave-cr-type')?.addEventListener('change', e => {
+      const sub  = document.getElementById('leave-sub-form');
+      const type = e.target.value;
+      if (type === 'missing') {
+        sub.innerHTML = `
+          <div class="form-group">
+            <label class="form-label">Leave type</label>
+            <select class="form-select" id="leave-new-type" style="font-size:var(--text-base)">
+              <option>Annual leave</option><option>Sick leave</option>
+              <option>Public holiday</option><option>Compassionate leave</option><option>Other</option>
+            </select>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3)">
+            <div class="form-group">
+              <label class="form-label">Start date</label>
+              <input class="form-input" type="date" id="leave-new-start" style="font-size:var(--text-base)">
+            </div>
+            <div class="form-group">
+              <label class="form-label">End date</label>
+              <input class="form-input" type="date" id="leave-new-end" style="font-size:var(--text-base)">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Expected resume date</label>
+            <input class="form-input" type="date" id="leave-resume" style="font-size:var(--text-base)">
+          </div>`;
+      } else {
+        sub.innerHTML = `
+          <div class="form-group">
+            <label class="form-label">Which entry? (describe dates)</label>
+            <input class="form-input" type="text" id="leave-ref"
+              placeholder="e.g. Annual leave 2–6 Jun 2025"
+              style="font-size:var(--text-base)">
+          </div>
+          <div class="form-group">
+            <label class="form-label">What should it say instead?</label>
+            <input class="form-input" type="text" id="leave-correct"
+              placeholder="Correct value or dates"
+              style="font-size:var(--text-base)">
+          </div>`;
       }
-    }
+    });
+  },
 
-    document.getElementById('change-request-overlay').classList.add('open');
+  /* -- Expertise / sector tag panel -- */
+  _buildExpertisePanel(session, name) {
+    const currentTags = session.expertise || [];
+    const ALL_SECTORS = [
+      'energy','agriculture','health','wash','education',
+      'finance','livelihoods','gender','monitoring','data','strategy','partnerships',
+    ];
+
+    /* Account clusters — demo data */
+    const CLUSTERS = {
+      energy: 'Energy & Climate',
+      agriculture: 'Food Systems',
+      health: 'Health & WASH',
+      wash: 'Health & WASH',
+      education: 'Human Development',
+      gender: 'Human Development',
+      finance: 'Inclusive Finance',
+      livelihoods: 'Inclusive Finance',
+      strategy: 'Partnerships & Strategy',
+      partnerships: 'Partnerships & Strategy',
+    };
+    const myCluster = currentTags.map(t => CLUSTERS[t]).filter(Boolean);
+    const uniqueClusters = [...new Set(myCluster)];
+
+    const tagChip = (tag, selected) => `
+      <button class="sector-chip" data-tag="${tag}"
+        style="padding:5px 12px;border-radius:var(--radius-full);font-size:var(--text-xs);
+          font-weight:500;cursor:pointer;border:1px solid ${selected ? 'var(--color-accent)' : 'var(--color-border)'};
+          background:${selected ? 'var(--color-accent-light)' : 'var(--color-surface)'};
+          color:${selected ? 'var(--color-accent-text)' : 'var(--color-text-secondary)'};
+          transition:all 150ms ease">
+        ${selected ? '✓ ' : ''}${tag}
+      </button>`;
+
+    const html = `
+      ${this._sectionHead('🔬', 'Expertise / sector tag', `Correction for ${name}`)}
+
+      <div style="margin-bottom:var(--space-3)">
+        ${this._infoRow('Team member', name)}
+        ${this._infoRow('Account cluster', uniqueClusters.length ? uniqueClusters.join(', ') : 'None assigned', 'var(--color-accent)')}
+        ${this._infoRow('Current expertise tags', currentTags.length ? currentTags.join(', ') : 'None set')}
+      </div>
+
+      <div style="font-size:var(--text-xs);font-weight:500;color:var(--color-text-secondary);
+        text-transform:uppercase;letter-spacing:.06em;margin:var(--space-4) 0 10px">
+        Update expertise tags
+      </div>
+      <div style="font-size:var(--text-xs);color:var(--color-text-secondary);margin-bottom:10px">
+        Click to select all sectors that apply to you. Currently selected tags are highlighted.
+      </div>
+
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:var(--space-4)" id="sector-chips">
+        ${ALL_SECTORS.map(s => tagChip(s, currentTags.includes(s))).join('')}
+      </div>
+
+      <div id="selected-preview"
+        style="padding:8px 12px;background:var(--color-surface-2);border-radius:var(--radius-md);
+          font-size:var(--text-xs);color:var(--color-text-secondary);margin-bottom:var(--space-4)">
+        Selected: <strong id="selected-tags-list">${currentTags.join(', ') || 'none'}</strong>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Additional context (optional)</label>
+        <textarea class="form-textarea" id="cr-note-expertise"
+          placeholder="e.g. recently moved from health to energy projects…"
+          style="min-height:60px"></textarea>
+      </div>
+    `;
+
+    this._showContext(html, 'expertise');
+
+    /* Track selected tags */
+    let selectedTags = [...currentTags];
+    document.querySelectorAll('.sector-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const tag = chip.dataset.tag;
+        if (selectedTags.includes(tag)) {
+          selectedTags = selectedTags.filter(t => t !== tag);
+          chip.style.background    = 'var(--color-surface)';
+          chip.style.borderColor   = 'var(--color-border)';
+          chip.style.color         = 'var(--color-text-secondary)';
+          chip.textContent         = tag;
+        } else {
+          selectedTags.push(tag);
+          chip.style.background    = 'var(--color-accent-light)';
+          chip.style.borderColor   = 'var(--color-accent)';
+          chip.style.color         = 'var(--color-accent-text)';
+          chip.textContent         = `✓ ${tag}`;
+        }
+        document.getElementById('selected-tags-list').textContent =
+          selectedTags.join(', ') || 'none';
+        this._selectedTags = selectedTags;
+      });
+    });
+    this._selectedTags = [...currentTags];
+  },
+
+  /* -- Availability status panel -- */
+  _buildAvailabilityPanel(session, name) {
+    const schedule = (typeof DEMO_SCHEDULE !== 'undefined') ? DEMO_SCHEDULE : [];
+    const me = schedule.find(p =>
+      p.name.toLowerCase().includes((session.name||'').split(' ')[0].toLowerCase())
+    );
+
+    const STATUS_OPTS = [
+      { value:'available', label:'Available',      color:'var(--color-success)' },
+      { value:'busy',      label:'In meetings',    color:'var(--color-warning)' },
+      { value:'leave',     label:'On leave',       color:'var(--color-danger)'  },
+      { value:'offline',   label:'Offline',        color:'var(--slate-400)'     },
+    ];
+
+    const todayBlocks = me
+      ? me.bars.map(b => `
+          <div style="display:flex;align-items:center;gap:8px;padding:6px 0;
+            border-bottom:1px solid var(--color-border)">
+            <div style="width:10px;height:10px;border-radius:2px;flex-shrink:0;
+              background:${b.type==='meeting'?'var(--green-500)':b.type==='focus'?'var(--blue-500)':'var(--amber-400)'}"></div>
+            <div style="font-size:var(--text-sm);flex:1">${b.label}</div>
+            <span class="badge badge-slate" style="font-size:9px">${b.type}</span>
+          </div>`).join('')
+      : `<div style="font-size:var(--text-sm);color:var(--color-text-secondary)">No schedule entries found for today.</div>`;
+
+    const currentStatus = me ? me.status : (session.status || 'available');
+    const currentLabel  = STATUS_OPTS.find(o => o.value === currentStatus)?.label || currentStatus;
+
+    const html = `
+      ${this._sectionHead('🟢', 'Availability status', `Correction for ${name}`)}
+
+      <div style="margin-bottom:var(--space-3)">
+        ${this._infoRow('Team member', name)}
+        ${this._infoRow('Status shown today', currentLabel,
+          STATUS_OPTS.find(o => o.value === currentStatus)?.color || 'var(--color-text-primary)')}
+      </div>
+
+      <div style="font-size:var(--text-xs);font-weight:500;color:var(--color-text-secondary);
+        text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">
+        Today's schedule entries
+      </div>
+      <div style="max-height:140px;overflow-y:auto;margin-bottom:var(--space-4)">${todayBlocks}</div>
+
+      <div style="font-size:var(--text-xs);font-weight:500;color:var(--color-text-secondary);
+        text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">
+        What needs correcting?
+      </div>
+
+      <div style="display:grid;gap:6px;margin-bottom:var(--space-4)">
+        <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;
+          border:1px solid var(--color-border);border-radius:var(--radius-md);cursor:pointer">
+          <input type="radio" name="avail-type" value="status_wrong">
+          <div>
+            <div style="font-size:var(--text-sm);font-weight:500">My overall status is wrong</div>
+            <div style="font-size:var(--text-xs);color:var(--color-text-secondary)">Currently shows: ${currentLabel}</div>
+          </div>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;
+          border:1px solid var(--color-border);border-radius:var(--radius-md);cursor:pointer">
+          <input type="radio" name="avail-type" value="block_missing">
+          <div>
+            <div style="font-size:var(--text-sm);font-weight:500">A schedule block is missing</div>
+            <div style="font-size:var(--text-xs);color:var(--color-text-secondary)">A meeting or focus time is not showing</div>
+          </div>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;
+          border:1px solid var(--color-border);border-radius:var(--radius-md);cursor:pointer">
+          <input type="radio" name="avail-type" value="block_wrong">
+          <div>
+            <div style="font-size:var(--text-sm);font-weight:500">A block is wrong or should be removed</div>
+          </div>
+        </label>
+      </div>
+
+      <div id="avail-sub-form"></div>
+
+      <div class="form-group">
+        <label class="form-label">Additional context (optional)</label>
+        <textarea class="form-textarea" id="cr-note-avail"
+          placeholder="Any extra detail…" style="min-height:60px"></textarea>
+      </div>
+    `;
+
+    this._showContext(html, 'availability');
+
+    document.querySelectorAll('[name="avail-type"]').forEach(r => {
+      r.addEventListener('change', () => {
+        const sub = document.getElementById('avail-sub-form');
+        if (r.value === 'status_wrong') {
+          sub.innerHTML = `
+            <div class="form-group">
+              <label class="form-label">Correct status</label>
+              <select class="form-select" id="avail-correct-status" style="font-size:var(--text-base)">
+                ${STATUS_OPTS.map(o => `
+                  <option value="${o.value}"${o.value===currentStatus?' selected':''}>${o.label}</option>
+                `).join('')}
+              </select>
+            </div>`;
+        } else {
+          sub.innerHTML = `
+            <div class="form-group">
+              <label class="form-label">Describe the block</label>
+              <input class="form-input" type="text" id="avail-block-desc"
+                placeholder="e.g. Focus time 2–4pm missing on Tuesday"
+                style="font-size:var(--text-base)">
+            </div>`;
+        }
+      });
+    });
+  },
+
+  /* -- Other panel -- */
+  _buildOtherPanel(session, name) {
+    const html = `
+      ${this._sectionHead('✏️', 'Something else', `Correction for ${name}`)}
+      <div class="form-group">
+        <label class="form-label">What is incorrect?</label>
+        <input class="form-input" type="text" id="other-field-name"
+          placeholder="e.g. Email address, phone number, office location"
+          style="font-size:var(--text-base)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Current (incorrect) value</label>
+        <input class="form-input" type="text" id="other-current"
+          placeholder="What it currently shows" style="font-size:var(--text-base)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Correct value</label>
+        <input class="form-input" type="text" id="other-correct"
+          placeholder="What it should say" style="font-size:var(--text-base)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Additional context (optional)</label>
+        <textarea class="form-textarea" id="cr-note-other"
+          placeholder="Any extra detail for the director…"
+          style="min-height:60px"></textarea>
+      </div>`;
+    this._showContext(html, 'other');
+  },
+
+  /* ════════════════════════════════════════
+     OPEN / CLOSE
+  ════════════════════════════════════════ */
+  open(context = {}) {
+    if (!document.getElementById('cr-overlay')) this.init();
+    this._showPicker();
+    document.getElementById('cr-overlay').classList.add('open');
+    if (context.field) this._openField(context.field);
   },
 
   close() {
-    const overlay = document.getElementById('change-request-overlay');
+    const overlay = document.getElementById('cr-overlay');
     if (overlay) overlay.classList.remove('open');
   },
 
-  /* ── Submit ── */
+  /* ════════════════════════════════════════
+     SUBMIT — collects values based on active field
+  ════════════════════════════════════════ */
   async submit() {
     const session = Session.get();
     const field   = this._currentField;
-    const correctEl = document.getElementById('cr-correct-input');
-    const correct = correctEl ? correctEl.value.trim() : '';
-    const note    = (document.getElementById('cr-note')?.value || '').trim();
+    if (!field) { Toast.show('Please select what needs correcting.', 'warning'); return; }
 
-    if (!field) {
-      Toast.show('Please select what needs correcting.', 'warning');
+    let correctValue  = '';
+    let currentValue  = '';
+    let note          = '';
+
+    try {
+      if (field === 'role') {
+        const type = document.querySelector('[name="role-correction-type"]:checked')?.value;
+        if (!type) { Toast.show('Please select what needs correcting about your role.', 'warning'); return; }
+        if (type === 'wrong_dashboard_role') {
+          correctValue = document.getElementById('role-new-value')?.value;
+          currentValue = ROLE_LABELS[session.role] || session.role;
+        } else if (type === 'wrong_project_role') {
+          const proj = document.getElementById('role-project-select')?.value;
+          const role = document.getElementById('role-project-role')?.value;
+          correctValue = `${proj}: ${role}`;
+          currentValue = `Project role on ${proj}`;
+        } else if (type === 'add_project') {
+          const proj = document.getElementById('role-add-project')?.value;
+          const adhoc = document.getElementById('role-adhoc-name')?.value;
+          const role  = document.getElementById('role-add-project-role')?.value;
+          correctValue = `Add to project: ${proj === '__adhoc' ? adhoc : proj} as ${role}`;
+          currentValue = 'Not currently assigned';
+        }
+        note = document.getElementById('cr-note-role')?.value || '';
+
+      } else if (field === 'project') {
+        const proj  = document.getElementById('proj-cr-select')?.value;
+        const newN  = document.getElementById('proj-new-name')?.value;
+        const issue = document.getElementById('proj-cr-issue')?.value;
+        const role  = document.getElementById('proj-correct-role')?.value;
+        if (!proj || !issue) { Toast.show('Please select a project and the issue.', 'warning'); return; }
+        currentValue = proj === '__new' ? newN : proj;
+        correctValue = issue === 'add_me' ? `Add ${session.name} to ${currentValue}`
+          : issue === 'remove_me' ? `Remove ${session.name} from ${currentValue}`
+          : `Correct role on ${currentValue} to: ${role}`;
+        note = document.getElementById('cr-note-project')?.value || '';
+
+      } else if (field === 'leave') {
+        const type = document.getElementById('leave-cr-type')?.value;
+        if (!type) { Toast.show('Please select the type of leave correction.', 'warning'); return; }
+        if (type === 'missing') {
+          const ltype = document.getElementById('leave-new-type')?.value;
+          const start = document.getElementById('leave-new-start')?.value;
+          const end   = document.getElementById('leave-new-end')?.value;
+          const res   = document.getElementById('leave-resume')?.value;
+          if (!start || !end) { Toast.show('Please enter the leave dates.', 'warning'); return; }
+          currentValue = 'Missing entry';
+          correctValue = `Add ${ltype}: ${start} to ${end}, resume ${res}`;
+        } else {
+          const ref  = document.getElementById('leave-ref')?.value;
+          const corr = document.getElementById('leave-correct')?.value;
+          if (!ref || !corr) { Toast.show('Please describe the entry and correction.', 'warning'); return; }
+          currentValue = ref;
+          correctValue = corr;
+        }
+        note = document.getElementById('cr-note-leave')?.value || '';
+
+      } else if (field === 'expertise') {
+        const selected = this._selectedTags || [];
+        const original = session.expertise || [];
+        if (JSON.stringify(selected.sort()) === JSON.stringify([...original].sort())) {
+          Toast.show('No changes detected — select or deselect tags to make a correction.', 'warning');
+          return;
+        }
+        currentValue = original.join(', ') || 'None';
+        correctValue = selected.join(', ')  || 'None';
+        note = document.getElementById('cr-note-expertise')?.value || '';
+
+      } else if (field === 'availability') {
+        const type = document.querySelector('[name="avail-type"]:checked')?.value;
+        if (!type) { Toast.show('Please select what needs correcting.', 'warning'); return; }
+        if (type === 'status_wrong') {
+          currentValue = session.status || 'available';
+          correctValue = document.getElementById('avail-correct-status')?.value;
+        } else {
+          const desc   = document.getElementById('avail-block-desc')?.value;
+          currentValue = 'Schedule block';
+          correctValue = desc;
+        }
+        note = document.getElementById('cr-note-avail')?.value || '';
+
+      } else {
+        const fname = document.getElementById('other-field-name')?.value;
+        currentValue = document.getElementById('other-current')?.value;
+        correctValue = document.getElementById('other-correct')?.value;
+        note         = document.getElementById('cr-note-other')?.value || '';
+        if (!fname || !correctValue) { Toast.show('Please fill in all required fields.', 'warning'); return; }
+        this._currentField = fname;
+      }
+
+    } catch (err) {
+      console.error('[ChangeRequest.submit] Error collecting values:', err);
+      Toast.show('Something went wrong — please try again.', 'warning');
       return;
     }
-    if (!correct) {
-      Toast.show('Please enter the correct value.', 'warning');
-      correctEl?.focus();
-      return;
-    }
+
+    if (!correctValue) { Toast.show('Please complete the correction details.', 'warning'); return; }
 
     const request = {
       id:           `cr_${Date.now()}`,
-      submittedBy:  session ? session.name  : 'Unknown',
+      submittedBy:  session ? session.name   : 'Unknown',
       userId:       session ? session.userId : null,
-      field,
-      fieldLabel:   this.FIELDS[field]?.label || field,
-      currentValue: this._currentValue || '',
-      correctValue: correct,
+      field:        this._currentField,
+      fieldLabel:   this._FIELDS.find(f => f.key === field)?.label || field,
+      currentValue,
+      correctValue,
       note,
-      status:       'pending',
-      submittedAt:  new Date().toISOString(),
+      status:      'pending',
+      submittedAt: new Date().toISOString(),
     };
 
-    /* ── ALWAYS write to localStorage first (admin panel reads from here) ── */
+    /* Always write to localStorage — admin panel reads from here */
     const queue = JSON.parse(localStorage.getItem('bopinc_cr_queue') || '[]');
     queue.push(request);
     localStorage.setItem('bopinc_cr_queue', JSON.stringify(queue));
 
-    /* ── Also push to Sheets if Apps Script is configured ── */
+    /* Also push to Sheets if configured */
     try {
       if (typeof SheetsClient !== 'undefined' &&
           typeof SHEETS_CONFIG !== 'undefined' &&
@@ -360,33 +1006,31 @@ const ChangeRequest = {
           SHEETS_CONFIG.APPS_SCRIPT_URL !== 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE') {
         await SheetsClient.append(SHEETS_CONFIG.TABS.PENDING_CHANGES, request);
       }
-    } catch (err) {
-      console.warn('[ChangeRequest] Sheets write failed — saved locally only:', err);
-    }
+    } catch (_) {}
 
-    /* Show confirmation */
-    document.getElementById('cr-status').style.display = 'flex';
-    const submitBtn = document.getElementById('cr-submit');
+    /* Notify admin tab if open */
+    try {
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: 'bopinc_cr_queue', newValue: JSON.stringify(queue),
+      }));
+    } catch (_) {}
+
+    /* Success state */
+    document.getElementById('cr-submitted-msg').style.display = 'block';
+    document.getElementById('cr-step-context').style.display  = 'none';
+    document.getElementById('cr-back-btn').style.display      = 'none';
+    const submitBtn = document.getElementById('cr-submit-btn');
     submitBtn.disabled   = true;
     submitBtn.textContent = 'Submitted ✓';
 
-    /* Update admin badge if the admin panel is open in another tab (best effort) */
-    try {
-      const ev = new StorageEvent('storage', {
-        key: 'bopinc_cr_queue', newValue: JSON.stringify(queue),
-      });
-      window.dispatchEvent(ev);
-    } catch (_) {}
-
-    setTimeout(() => this.close(), 2500);
+    setTimeout(() => this.close(), 2800);
   },
 };
 
-/* ── Global helper: attach request-correction buttons to a container ── */
 function attachRequestButtons(container) {
   if (!container) return;
   container.querySelectorAll('[data-request-field]').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', e => {
       e.stopPropagation();
       ChangeRequest.open({
         field:        btn.getAttribute('data-request-field'),

@@ -477,109 +477,134 @@ async function loadChangeRequests() {
   const container = document.getElementById('cr-container');
   const queue     = JSON.parse(localStorage.getItem('bopinc_cr_queue') || '[]');
   const pending   = queue.filter(r => r.status === 'pending');
+  const reviewed  = queue.filter(r => r.status !== 'pending').slice(-5).reverse();
 
-  /* Update badge */
   const badge = document.getElementById('cr-badge');
   if (badge) {
-    badge.textContent = pending.length;
+    badge.textContent   = pending.length;
     badge.style.display = pending.length > 0 ? 'inline-flex' : 'none';
   }
 
-  if (pending.length === 0) {
+  if (pending.length === 0 && reviewed.length === 0) {
     container.innerHTML = `
       <div class="admin-card" style="text-align:center;padding:var(--space-8)">
-        <div style="font-size:32px;margin-bottom:var(--space-3)">✓</div>
-        <div style="font-size:var(--text-base);font-weight:500">No pending requests</div>
-        <div style="font-size:var(--text-sm);color:var(--color-text-secondary);margin-top:4px">
-          Team member correction requests will appear here as they are submitted.
+        <div style="font-size:40px;margin-bottom:var(--space-3)">&#10003;</div>
+        <div style="font-size:var(--text-base);font-weight:500;margin-bottom:4px">All clear</div>
+        <div style="font-size:var(--text-sm);color:var(--color-text-secondary)">
+          No pending requests. Team member corrections will appear here.
         </div>
       </div>`;
     return;
   }
 
-  container.innerHTML = pending.map(r => {
-    const label      = r.fieldLabel || r.field || 'Unknown field';
-    const submitted  = new Date(r.submittedAt).toLocaleString('en-GB', {
-      day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit',
-    });
+  const fmtDate = d => d ? new Date(d).toLocaleString('en-GB',{
+    day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',
+  }) : '—';
 
+  const ICONS = { role:'&#127917;',project:'&#128193;',leave:'&#128197;',
+    expertise:'&#128302;',availability:'&#128994;',other:'&#9999;&#65039;' };
+
+  const renderCard = r => {
+    const icon = ICONS[r.field] || '&#9999;&#65039;';
     return `
-      <div class="cr-card" id="cr-${r.id}">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;
+      <div id="cr-${r.id}" class="admin-card"
+        style="border-left:4px solid var(--amber-400);margin-bottom:16px;
+          padding:var(--space-4);transition:opacity .3s">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;
           margin-bottom:var(--space-3)">
-          <div>
-            <div style="font-size:var(--text-base);font-weight:600">${r.submittedBy}</div>
-            <div style="font-size:var(--text-xs);color:var(--color-text-secondary)">
-              ${submitted}
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:40px;height:40px;border-radius:50%;background:var(--amber-50);
+              display:flex;align-items:center;justify-content:center;
+              font-size:20px;flex-shrink:0">${icon}</div>
+            <div>
+              <div style="font-size:var(--text-base);font-weight:600">${r.submittedBy}</div>
+              <div style="font-size:var(--text-xs);color:var(--color-text-secondary)">${fmtDate(r.submittedAt)}</div>
             </div>
           </div>
-          <span class="badge badge-amber">Pending review</span>
+          <span class="badge badge-amber">Needs review</span>
         </div>
-
-        <!-- What field -->
-        <div style="margin-bottom:var(--space-3);padding:10px 12px;
-          background:var(--color-surface-2);border-radius:var(--radius-md)">
-          <div style="font-size:10px;font-weight:500;color:var(--color-text-secondary);
-            text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">
-            Field to correct
-          </div>
-          <div style="font-size:var(--text-sm);font-weight:500">${label}</div>
+        <div style="background:var(--color-surface-2);border-radius:var(--radius-md);
+          padding:8px 12px;margin-bottom:var(--space-3)">
+          <div style="font-size:10px;font-weight:600;color:var(--color-text-secondary);
+            text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Correction type</div>
+          <div style="font-size:var(--text-sm);font-weight:500">${r.fieldLabel || r.field}</div>
         </div>
-
-        <!-- Current vs correct -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);
-          margin-bottom:var(--space-3)">
-          <div style="padding:10px 12px;background:var(--color-danger-bg);
-            border-radius:var(--radius-md);border-left:3px solid var(--color-danger)">
-            <div class="cr-field">Currently shows</div>
-            <div class="cr-val" style="color:var(--color-danger);font-weight:500">
-              ${r.currentValue || '—'}
-            </div>
+        <div style="display:grid;grid-template-columns:1fr 24px 1fr;gap:6px;
+          align-items:center;margin-bottom:var(--space-3)">
+          <div style="padding:10px 12px;background:var(--color-danger-bg);border-radius:var(--radius-md)">
+            <div style="font-size:10px;font-weight:600;color:var(--color-danger);
+              text-transform:uppercase;margin-bottom:3px">Currently shows</div>
+            <div style="font-size:var(--text-sm);font-weight:500">${r.currentValue || '—'}</div>
           </div>
-          <div style="padding:10px 12px;background:var(--color-success-bg);
-            border-radius:var(--radius-md);border-left:3px solid var(--color-success)">
-            <div class="cr-field">Should be</div>
-            <div class="cr-val" style="color:var(--color-success);font-weight:500">
-              ${r.correctValue}
-            </div>
+          <div style="text-align:center;font-size:14px;color:var(--color-text-tertiary)">&rarr;</div>
+          <div style="padding:10px 12px;background:var(--color-success-bg);border-radius:var(--radius-md)">
+            <div style="font-size:10px;font-weight:600;color:var(--color-success);
+              text-transform:uppercase;margin-bottom:3px">Should be</div>
+            <div style="font-size:var(--text-sm);font-weight:500">${r.correctValue}</div>
           </div>
         </div>
-
-        ${r.note ? `
-          <div style="font-size:var(--text-xs);color:var(--color-text-secondary);
-            margin-bottom:var(--space-3);padding:8px 10px;
-            background:var(--amber-50);border-left:3px solid var(--amber-300);
-            border-radius:0 var(--radius-sm) var(--radius-sm) 0">
-            <strong style="color:var(--amber-900)">Note from ${r.submittedBy.split(' ')[0]}:</strong>
-            ${r.note}
-          </div>` : ''}
-
-        <div class="form-group" style="margin-bottom:var(--space-3)">
-          <label class="form-label" style="font-size:11px">
-            Review note for ${r.submittedBy.split(' ')[0]} (optional)
+        ${r.note ? `<div style="padding:8px 12px;background:var(--amber-50);margin-bottom:var(--space-3);
+          border-radius:var(--radius-md);font-size:var(--text-xs);color:var(--amber-900);
+          border-left:2px solid var(--amber-400)">
+          <strong>${r.submittedBy.split(' ')[0]} says:</strong> ${r.note}</div>` : ''}
+        <div style="margin-bottom:var(--space-3)">
+          <label style="font-size:11px;font-weight:500;color:var(--color-text-secondary);
+            display:block;margin-bottom:6px">
+            Reply to ${r.submittedBy.split(' ')[0]} (optional — they will see this)
           </label>
-          <input class="form-input" type="text" id="cr-note-${r.id}"
-            placeholder="Reason for your decision…"
-            style="font-size:var(--text-sm);padding:var(--space-2) var(--space-3)">
+          <input type="text" id="cr-note-${r.id}"
+            placeholder="e.g. Updated. Or: Cannot verify, please contact HR."
+            style="width:100%;padding:8px 12px;border:1px solid var(--color-border);
+              border-radius:var(--radius-md);font-size:13px;font-family:inherit;
+              background:var(--color-surface);color:var(--color-text-primary)">
         </div>
+        <div style="display:flex;gap:8px">
+          <button onclick="reviewCR('${r.id}','approved')"
+            class="btn btn-primary btn-sm" style="flex:1">&#10003; Approve and action</button>
+          <button onclick="reviewCR('${r.id}','rejected')"
+            class="btn btn-secondary btn-sm">&#10007; Reject</button>
+        </div>
+      </div>`;
+  };
 
-        <div style="display:flex;gap:var(--space-2)">
-          <button class="btn btn-primary btn-sm"
-            onclick="reviewCR('${r.id}','approved')">
-            ✓ Approve
-          </button>
-          <button class="btn btn-secondary btn-sm"
-            onclick="reviewCR('${r.id}','rejected')">
-            ✗ Reject
-          </button>
+  const pendingHtml = pending.length > 0 ? `
+    <div style="font-size:11px;font-weight:600;color:var(--color-text-secondary);
+      text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;
+      display:flex;align-items:center;gap:8px">
+      <span style="background:var(--amber-400);color:var(--amber-900);border-radius:50%;
+        width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;
+        font-size:11px;font-weight:700">${pending.length}</span>
+      Awaiting your review
+    </div>
+    ${pending.map(renderCard).join('')}` : '';
+
+  const reviewedHtml = reviewed.length > 0 ? `
+    <div style="font-size:11px;font-weight:600;color:var(--color-text-secondary);
+      text-transform:uppercase;letter-spacing:.07em;
+      margin:${pending.length ? '24px' : '0'} 0 12px">Recently reviewed</div>
+    ${reviewed.map(r => `
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;
+        border:1px solid var(--color-border);border-radius:var(--radius-md);
+        margin-bottom:8px;opacity:.75">
+        <span style="font-size:18px">${ICONS[r.field]||'&#9999;&#65039;'}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:var(--text-sm);font-weight:500">${r.submittedBy}
+            <span style="font-weight:400;color:var(--color-text-secondary)"> — ${r.fieldLabel||r.field}</span>
+          </div>
+          <div style="font-size:var(--text-xs);color:var(--color-text-secondary)">
+            ${fmtDate(r.reviewedAt||r.submittedAt)}
+            ${r.reviewNote ? ' &middot; "' + r.reviewNote + '"' : ''}
+          </div>
         </div>
-      </div>
-    `;
-  }).join('');
+        <span class="badge ${r.status==='approved'?'badge-green':'badge-red'}" style="flex-shrink:0">
+          ${r.status==='approved' ? '&#10003; Approved' : '&#10007; Rejected'}
+        </span>
+      </div>`).join('')}` : '';
+
+  container.innerHTML = pendingHtml + reviewedHtml;
 }
 
-/* Listen for new requests submitted from the dashboard tab */
-window.addEventListener('storage', (e) => {
+window.addEventListener('storage', e => {
   if (e.key === 'bopinc_cr_queue') loadChangeRequests();
 });
 
