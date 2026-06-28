@@ -69,9 +69,37 @@ const ExportToolbar = {
     document.getElementById(`${id}-pdf`)?.addEventListener('click', () => {
       if (options.onPrint) options.onPrint();
       const title = options.title || document.title;
+      const prev  = document.title;
       document.title = `BOPinc Nigeria — ${title}`;
+
+      /* Ensure all non-active pages are hidden for print —
+         the active page is already set by navigate(), but this
+         is a safety net for the export toolbar which may be
+         clicked without navigating first. */
+      const activeSection = options.pageId
+        ? document.querySelector(`.page[data-page="${options.pageId}"]`)
+        : document.querySelector('.page.active');
+
+      /* Temporarily mark only the correct page as active */
+      let swapped = false;
+      if (activeSection && !activeSection.classList.contains('active')) {
+        document.querySelectorAll('.page.active').forEach(p => p.classList.remove('active'));
+        activeSection.classList.add('active');
+        swapped = true;
+      }
+
       window.print();
-      setTimeout(() => { document.title = 'BOPinc Nigeria Dashboard'; }, 1000);
+
+      document.title = prev;
+      if (swapped) {
+        /* Restore — the page the user was actually on */
+        activeSection.classList.remove('active');
+        const currentId = typeof window.currentPage !== 'undefined' ? window.currentPage : '';
+        if (currentId) {
+          const current = document.querySelector(`.page[data-page="${currentId}"]`);
+          if (current) current.classList.add('active');
+        }
+      }
     });
 
     /* CSV */
