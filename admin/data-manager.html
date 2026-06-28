@@ -475,61 +475,113 @@ function clearVisitForm() {
 ════════════════════════════════════════ */
 async function loadChangeRequests() {
   const container = document.getElementById('cr-container');
-  const queue = JSON.parse(localStorage.getItem('bopinc_cr_queue') || '[]');
-  const pending = queue.filter(r => r.status === 'pending');
+  const queue     = JSON.parse(localStorage.getItem('bopinc_cr_queue') || '[]');
+  const pending   = queue.filter(r => r.status === 'pending');
 
-  document.getElementById('cr-badge').textContent = pending.length;
-  document.getElementById('cr-badge').style.display = pending.length > 0 ? 'inline-flex' : 'none';
+  /* Update badge */
+  const badge = document.getElementById('cr-badge');
+  if (badge) {
+    badge.textContent = pending.length;
+    badge.style.display = pending.length > 0 ? 'inline-flex' : 'none';
+  }
 
   if (pending.length === 0) {
-    container.innerHTML = `<div class="admin-card" style="text-align:center;padding:var(--space-8)">
-      <div style="font-size:32px;margin-bottom:var(--space-3)">✓</div>
-      <div style="font-size:var(--text-base);font-weight:500">No pending requests</div>
-      <div style="font-size:var(--text-sm);color:var(--color-text-secondary);margin-top:4px">
-        Team member correction requests will appear here.</div>
-    </div>`;
+    container.innerHTML = `
+      <div class="admin-card" style="text-align:center;padding:var(--space-8)">
+        <div style="font-size:32px;margin-bottom:var(--space-3)">✓</div>
+        <div style="font-size:var(--text-base);font-weight:500">No pending requests</div>
+        <div style="font-size:var(--text-sm);color:var(--color-text-secondary);margin-top:4px">
+          Team member correction requests will appear here as they are submitted.
+        </div>
+      </div>`;
     return;
   }
 
-  container.innerHTML = pending.map(r => `
-    <div class="cr-card" id="cr-${r.id}">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;
-        margin-bottom:var(--space-3)">
-        <div>
-          <div style="font-size:var(--text-sm);font-weight:500">${r.submittedBy}</div>
-          <div style="font-size:var(--text-xs);color:var(--color-text-secondary)">
-            ${new Date(r.submittedAt).toLocaleString('en-GB')}</div>
+  container.innerHTML = pending.map(r => {
+    const label      = r.fieldLabel || r.field || 'Unknown field';
+    const submitted  = new Date(r.submittedAt).toLocaleString('en-GB', {
+      day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit',
+    });
+
+    return `
+      <div class="cr-card" id="cr-${r.id}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;
+          margin-bottom:var(--space-3)">
+          <div>
+            <div style="font-size:var(--text-base);font-weight:600">${r.submittedBy}</div>
+            <div style="font-size:var(--text-xs);color:var(--color-text-secondary)">
+              ${submitted}
+            </div>
+          </div>
+          <span class="badge badge-amber">Pending review</span>
         </div>
-        <span class="badge badge-amber">Pending</span>
+
+        <!-- What field -->
+        <div style="margin-bottom:var(--space-3);padding:10px 12px;
+          background:var(--color-surface-2);border-radius:var(--radius-md)">
+          <div style="font-size:10px;font-weight:500;color:var(--color-text-secondary);
+            text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">
+            Field to correct
+          </div>
+          <div style="font-size:var(--text-sm);font-weight:500">${label}</div>
+        </div>
+
+        <!-- Current vs correct -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);
+          margin-bottom:var(--space-3)">
+          <div style="padding:10px 12px;background:var(--color-danger-bg);
+            border-radius:var(--radius-md);border-left:3px solid var(--color-danger)">
+            <div class="cr-field">Currently shows</div>
+            <div class="cr-val" style="color:var(--color-danger);font-weight:500">
+              ${r.currentValue || '—'}
+            </div>
+          </div>
+          <div style="padding:10px 12px;background:var(--color-success-bg);
+            border-radius:var(--radius-md);border-left:3px solid var(--color-success)">
+            <div class="cr-field">Should be</div>
+            <div class="cr-val" style="color:var(--color-success);font-weight:500">
+              ${r.correctValue}
+            </div>
+          </div>
+        </div>
+
+        ${r.note ? `
+          <div style="font-size:var(--text-xs);color:var(--color-text-secondary);
+            margin-bottom:var(--space-3);padding:8px 10px;
+            background:var(--amber-50);border-left:3px solid var(--amber-300);
+            border-radius:0 var(--radius-sm) var(--radius-sm) 0">
+            <strong style="color:var(--amber-900)">Note from ${r.submittedBy.split(' ')[0]}:</strong>
+            ${r.note}
+          </div>` : ''}
+
+        <div class="form-group" style="margin-bottom:var(--space-3)">
+          <label class="form-label" style="font-size:11px">
+            Review note for ${r.submittedBy.split(' ')[0]} (optional)
+          </label>
+          <input class="form-input" type="text" id="cr-note-${r.id}"
+            placeholder="Reason for your decision…"
+            style="font-size:var(--text-sm);padding:var(--space-2) var(--space-3)">
+        </div>
+
+        <div style="display:flex;gap:var(--space-2)">
+          <button class="btn btn-primary btn-sm"
+            onclick="reviewCR('${r.id}','approved')">
+            ✓ Approve
+          </button>
+          <button class="btn btn-secondary btn-sm"
+            onclick="reviewCR('${r.id}','rejected')">
+            ✗ Reject
+          </button>
+        </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--space-3);
-        margin-bottom:var(--space-4)">
-        <div><div class="cr-field">Field</div><div class="cr-val">${r.field}</div></div>
-        <div><div class="cr-field">Currently shows</div>
-          <div class="cr-val" style="color:var(--color-danger)">${r.currentValue || '—'}</div></div>
-        <div><div class="cr-field">Should be</div>
-          <div class="cr-val" style="color:var(--color-success)">${r.correctValue}</div></div>
-      </div>
-      ${r.note ? `<div style="font-size:var(--text-xs);color:var(--color-text-secondary);
-        margin-bottom:var(--space-3);padding:8px 10px;
-        background:var(--color-surface-2);border-radius:var(--radius-sm)">${r.note}</div>` : ''}
-      <div class="form-group" style="margin-bottom:var(--space-3)">
-        <label class="form-label" style="font-size:11px">Review note (optional)</label>
-        <input class="form-input" type="text" id="cr-note-${r.id}"
-          placeholder="Reason for approval or rejection…"
-          style="font-size:var(--text-sm);padding:var(--space-2) var(--space-3)">
-      </div>
-      <div style="display:flex;gap:var(--space-2)">
-        <button class="btn btn-primary btn-sm" onclick="reviewCR('${r.id}','approved')">
-          Approve
-        </button>
-        <button class="btn btn-secondary btn-sm" onclick="reviewCR('${r.id}','rejected')">
-          Reject
-        </button>
-      </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
+
+/* Listen for new requests submitted from the dashboard tab */
+window.addEventListener('storage', (e) => {
+  if (e.key === 'bopinc_cr_queue') loadChangeRequests();
+});
 
 function reviewCR(id, decision) {
   const queue = JSON.parse(localStorage.getItem('bopinc_cr_queue') || '[]');
