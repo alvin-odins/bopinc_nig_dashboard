@@ -117,11 +117,14 @@
       const btn = document.getElementById('login-btn');
       const err = document.getElementById('error-strip');
 
-      /* Phase 2: plain text match against env.
-         Phase 4 upgrade: bcrypt hash comparison via Apps Script */
-      const ADMIN_PW = (typeof SECRETS !== 'undefined' && SECRETS.ADMIN_PASSWORD_HASH)
-        ? SECRETS.ADMIN_PASSWORD_HASH
-        : 'Swift2026'; /* fallback dev password — change before launch */
+      /* Password priority:
+         1. Custom password saved in localStorage (set via Settings panel)
+         2. SECRETS.ADMIN_PASSWORD_HASH if secrets.js is configured
+         3. Dev fallback — change before launch */
+      const ADMIN_PW = localStorage.getItem('bopinc_admin_pw')
+        || ((typeof SECRETS !== 'undefined' && SECRETS.ADMIN_PASSWORD_HASH)
+            ? SECRETS.ADMIN_PASSWORD_HASH
+            : 'bopinc-admin-2025');
 
       btn.disabled = true;
       btn.textContent = 'Checking…';
