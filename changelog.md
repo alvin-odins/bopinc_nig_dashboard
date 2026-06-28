@@ -5,6 +5,34 @@ Most recent changes appear first.
 
 ---
 
+## Phase 6 — Slack intelligence, sector routing, urgency scoring
+*Weeks 11–12 · Status: ✅ Complete*
+
+**What changed**
+
+The Slack intel page is now fully built — replacing the coming-soon placeholder. Alerts are personalised by role and expertise, urgency-scored, and routed to the correct team member automatically. The notification bell footer now links to the full page. Live data loads from the `slack-alerts` Sheets tab when configured.
+
+**Added**
+- `sync/slack-sync.gs` — Apps Script sync engine: reads `slack-log`, classifies messages by sector keyword, scores urgency 1–10, routes to team members by expertise, writes to `slack-alerts` tab. Includes `doPostSlack()` Slack webhook receiver.
+- `docs/modules/slack-intel.md` — complete setup guide: Slack app creation, Event Subscriptions, webhook receiver deployment, Sheets tab format, routing customisation.
+
+**Edited**
+- `index.html` — `DEMO_SLACK_ALERTS` (per-user demo data for 4 role types); `SlackState`; `initSlackIntelPage()` — full page: summary stat strip, unread alerts sorted by urgency with red border for urgent items, older alerts collapsed in `<details>`; `navigate()` wired for slack-intel; `bootDashboard()` calls `initSlackIntelPage()`; `loadLiveData()` extended to fetch `SLACK_ALERTS` tab; notification bell footer replaced with "View all in Slack intel →" link
+- `CHANGELOG.md` — this entry
+
+**Phase 6 features delivered:**
+1. Slack intel page — full implementation, personalised by role
+2. Urgency scoring — 1–10 score from keyword detection, red border for urgent
+3. Sector routing — alerts filtered to team members by expertise tag match
+4. Alert type badges — mention, opportunity, deadline, meeting, sector, update
+5. Unread / read split — older alerts collapsed, unread sorted by urgency first
+6. Notification bell upgrade — footer links to Slack intel page
+7. Live Sheets data loading for slack-alerts tab
+8. Demo mode — per-user realistic demo alerts for all 4 role types
+
+**Files changed: 4 (2 new, 2 edited)**
+**Total files: 52**
+
 ## Phase 5 — Opportunities pipeline, funding analysis, capacity gap engine
 *Weeks 9–10 · Status: ✅ Complete*
 
