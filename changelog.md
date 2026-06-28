@@ -5,11 +5,40 @@ Most recent changes appear first.
 
 ---
 
-## Phase 1 — Foundation shell
+## Phase 2 — Google Sheets data layer
+*Weeks 3–4 · Status: ✅ Complete*
+
+**What changed**
+
+Replaced all hardcoded demo data with a live Google Sheets API connection. Dashboard now loads real team, project, and visit data. Login system replaces the Phase 1 demo role-switcher. Admin panel added for data entry.
+
+**Added**
+- `config/sheets-config.js` — Sheets document ID, tab names, column maps (safe to commit)
+- `config/secrets-template.js` — API key template (real secrets.js stays gitignored)
+- `src/components/sheets-client.js` — central Sheets API client: fetch, cache, write, error handling, stale data notice
+- `src/components/login.js` — login modal with email/password auth against users-roles Sheets tab; demo bypass for dev mode
+- `src/components/project-card.js` — project card with team member avatars, availability dots, health bar, detail modal, correction button
+- `admin/index.html` — admin panel login gate
+- `admin/data-manager.html` — data entry forms for projects, visits, roster view, change request review, sync controls
+- `docs/data/sheets-schema.md` — every tab, every column, accepted values, plain English for non-developers
+- `docs/data/how-to-update-data.md` — step-by-step admin guide for all data operations
+- `docs/modules/projects.md` — project card data model, team linking, health score explained
+
+**Edited**
+- `src/components/session.js` — added fetchRoster() for live Sheets data; Session.set() now accepts any user object
+- `src/components/change-request-modal.js` — submit() now async; POSTs to Sheets via SheetsClient (falls back to localStorage)
+- `index.html` — added Phase 2 script tags; bootDashboard() function; loadLiveData() async loader; Projects page wired to ProjectCard.renderAll(); dev banner updated; init block now handles both demo and live auth modes
+
+**Architecture decisions**
+- SheetsClient is the single source of truth for all API calls — no other component fetches directly
+- Write operations go through Apps Script web app (read-only direct API for fetches)
+- Local storage queue for admin-entered data until Apps Script URL is configured — zero data loss
+- Demo mode remains fully functional when Sheets is not configured — no config required to open and test the dashboard
+
+**Total files: 36**
+
+
 *Weeks 1–2 · Status: ✅ Complete*
-
-<!-- the below addendum is for phase 8 
-
 
 **Addendum — troubleshooting docs folder added**
 - `docs/troubleshooting/sync-not-running.md` — 6-step diagnosis guide for sync failures
@@ -18,7 +47,6 @@ Most recent changes appear first.
 - Fixed broken link in `02-how-data-flows.md` pointing to `sync-not-running.md`
 - Total files now: **25**
 
--->
 **Added**
 - Home page with stat cards (team available, active projects, open opportunities, next visit)
 - Today's team schedule preview with colour-coded bars (meeting, focus, leave, free)
