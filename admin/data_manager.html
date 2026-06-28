@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Data manager — BOPinc Nigeria Admin</title>
+  <link rel="stylesheet" href="../src/styles/variables.css">
+  <link rel="stylesheet" href="../src/styles/main.css">
+  <link rel="stylesheet" href="../src/styles/responsive.css">
+  <style>
+    body { background: var(--color-bg); }
+    #app { padding-top: 56px; }
+    #admin-header {
+      position: fixed; top: 0; left: 0; right: 0;
+      height: 56px;
+      background: var(--green-950);
+      display: flex; align-items: center;
+      padding: 0 var(--space-5); gap: var(--space-4);
+      z-index: 200;
+    }
+    .admin-header-logo {
+      font-size: var(--text-sm); font-weight: 600;
+      color: var(--green-100); white-space: nowrap;
+    }
+    .admin-header-spacer { flex: 1; }
+    .admin-nav {
+      display: flex; gap: 2px; overflow-x: auto;
+    }
+    .admin-nav-btn {
+      padding: 6px 12px; border-radius: var(--radius-md);
+      font-size: var(--text-xs); font-weight: 500;
+      color: var(--green-300); background: none; border: none;
+      cursor: pointer; white-space: nowrap;
+      transition: background var(--transition-fast), color var(--transition-fast);
+    }
+    .admin-nav-btn:hover { background: var(--green-900); color: var(--white); }
+    .admin-nav-btn.active { background: var(--green-800); color: var(--white); }
+    .admin-section { display: none; padding: var(--space-6); max-width: 900px; }
+    .admin-section.active { display: block; }
+    .section-title {
+      font-size: var(--text-xl); font-weight: 600;
+      margin-bottom: var(--space-2); color: var(--color-text-primary);
+    }
+    .section-subtitle {
+      font-size: var(--text-sm); color: var(--color-text-secondary);
+      margin-bottom: var(--space-6);
+    }
+    .admin-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-5);
+      margin-bottom: var(--space-4);
+    }
+    .admin-card-title {
+      font-size: var(--text-base); font-weight: 600;
+      margin-bottom: var(--space-4);
+      padding-bottom: var(--space-3);
+      border-bottom: 1px solid var(--color-border);
+    }
+    .form-row { display: grid; gap: var(--space-4); margin-bottom: var(--space-4); }
+    .form-row-2 { grid-template-columns: 1fr 1fr; }
+    .form-row-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: var(--text-xs); font-weight: 500;
+      padding: 4px 10px; border-radius: var(--radius-full);
+    }
+    .cr-card {
+      border: 1px solid var(--color-border); border-radius: var(--radius-md);
+      padding: var(--space-4); margin-bottom: var(--space-3);
+    }
+    .cr-field { font-size: var(--text-xs); color: var(--color-text-secondary); margin-bottom: 2px; }
+    .cr-val { font-size: var(--text-sm); }
+    .sync-status {
+      display: flex; align-items: center; gap: 8px;
+      font-size: var(--text-sm); color: var(--color-text-secondary);
+      margin-bottom: var(--space-4);
+    }
+    .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-success); }
+    @media (max-width: 640px) {
+      .form-row-2, .form-row-3 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header id="admin-header">
+  <div class="admin-header-logo">⚙ BOPinc Admin</div>
+  <div class="admin-nav">
+    <button class="admin-nav-btn active" onclick="showSection('projects')">Projects</button>
+    <button class="admin-nav-btn" onclick="showSection('visits')">Visits</button>
+    <button class="admin-nav-btn" onclick="showSection('roster')">Team roster</button>
+    <button class="admin-nav-btn" onclick="showSection('changes')">Change requests <span id="cr-badge" style="display:none;background:var(--amber-400);color:var(--amber-900);border-radius:50%;width:16px;height:16px;font-size:9px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;margin-left:4px">0</span></button>
+    <button class="admin-nav-btn" onclick="showSection('sync')">Sync controls</button>
+  </div>
+  <div class="admin-header-spacer"></div>
+  <a href="../index.html" style="font-size:var(--text-xs);color:var(--green-300);text-decoration:none">← Dashboard</a>
+  <button class="btn btn-sm" onclick="adminLogout()"
+    style="font-size:var(--text-xs);color:var(--green-300);background:var(--green-900);border-color:var(--green-700)">
+    Log out
+  </button>
+</header>
+
+<div id="app">
+
+  <!-- PROJECTS SECTION -->
+  <div class="admin-section active" id="section-projects">
+    <div class="section-title">Projects</div>
+    <div class="section-subtitle">Add and edit active projects. Changes appear on the dashboard immediately after saving.</div>
+
+    <div class="admin-card">
+      <div class="admin-card-title">Add new project</div>
+      <div class="form-row form-row-2">
+        <div class="form-group">
+          <label class="form-label">Project name *</label>
+          <input class="form-input" type="text" id="proj-name" placeholder="e.g. WASH-NG Phase 2">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Project code</label>
+          <input class="form-input" type="text" id="proj-code" placeholder="e.g. WASH-NG-24">
+        </div>
+      </div>
+      <div class="form-row form-row-3">
+        <div class="form-group">
+          <label class="form-label">Status *</label>
+          <select class="form-select" id="proj-status">
+            <option value="active">Active</option>
+            <option value="at-risk">At risk</option>
+            <option value="delayed">Delayed</option>
+            <option value="blocked">Blocked</option>
+            <option value="completed">Completed</option>
+            <option value="pipeline">Pipeline</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sector</label>
+          <select class="form-select" id="proj-sector">
+            <option value="">Select sector</option>
+            <option>Energy</option><option>Agriculture</option>
+            <option>Health</option><option>WASH</option>
+            <option>Education</option><option>Finance</option>
+            <option>Livelihoods</option><option>Gender</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Health score (0–100)</label>
+          <input class="form-input" type="number" id="proj-health" min="0" max="100" placeholder="75">
+        </div>
+      </div>
+      <div class="form-row form-row-2">
+        <div class="form-group">
+          <label class="form-label">Start date *</label>
+          <input class="form-input" type="date" id="proj-start">
+        </div>
+        <div class="form-group">
+          <label class="form-label">End date *</label>
+          <input class="form-input" type="date" id="proj-end">
+        </div>
+      </div>
+      <div class="form-row form-row-2">
+        <div class="form-group">
+          <label class="form-label">Project lead</label>
+          <input class="form-input" type="text" id="proj-lead" placeholder="Full name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Account manager</label>
+          <input class="form-input" type="text" id="proj-am" placeholder="Full name">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Team members</label>
+        <input class="form-input" type="text" id="proj-team"
+          placeholder="Name|Role, Name|Role (e.g. Fatima Aliyu|Health Lead, Bola Tunde|MEL)">
+        <div style="font-size:11px;color:var(--color-text-secondary);margin-top:4px">
+          Format: Name|Role — separate multiple members with a comma
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-textarea" id="proj-desc" rows="3"
+          placeholder="Brief description of the project goals and scope"></textarea>
+      </div>
+      <div style="display:flex;gap:var(--space-3)">
+        <button class="btn btn-primary" onclick="saveProject()">Save project</button>
+        <button class="btn btn-secondary" onclick="clearProjectForm()">Clear</button>
+      </div>
+      <div id="proj-status-msg" style="display:none;margin-top:12px;font-size:var(--text-sm)"></div>
+    </div>
+
+    <div class="admin-card">
+      <div class="admin-card-title">Existing projects</div>
+      <div id="projects-table-container">
+        <div style="font-size:var(--text-sm);color:var(--color-text-secondary)">
+          Loading projects from Sheets…
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VISITS SECTION -->
+  <div class="admin-section" id="section-visits">
+    <div class="section-title">Visits</div>
+    <div class="section-subtitle">Log incoming visits from global team and cross-country colleagues.</div>
+
+    <div class="admin-card">
+      <div class="admin-card-title">Add new visit</div>
+      <div class="form-group">
+        <label class="form-label">Visitors *</label>
+        <input class="form-input" type="text" id="visit-visitors"
+          placeholder="Name|Role|Country, Name|Role|Country">
+        <div style="font-size:11px;color:var(--color-text-secondary);margin-top:4px">
+          Format: Name|Role|Country — separate multiple visitors with a comma
+        </div>
+      </div>
+      <div class="form-row form-row-2">
+        <div class="form-group">
+          <label class="form-label">Arrival date *</label>
+          <input class="form-input" type="date" id="visit-arrival">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Departure date *</label>
+          <input class="form-input" type="date" id="visit-departure">
+        </div>
+      </div>
+      <div class="form-row form-row-2">
+        <div class="form-group">
+          <label class="form-label">Purpose *</label>
+          <input class="form-input" type="text" id="visit-purpose"
+            placeholder="e.g. Country strategy review and partner meetings">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Assigned country contact</label>
+          <input class="form-input" type="text" id="visit-contact" placeholder="Team member name">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">In-country schedule</label>
+        <textarea class="form-textarea" id="visit-schedule" rows="4"
+          placeholder="9 Jul: Arrival and office briefing; 10 Jul: Strategy session; 11 Jul: Partner meetings"></textarea>
+        <div style="font-size:11px;color:var(--color-text-secondary);margin-top:4px">
+          Format: Date: Description — separate entries with a semicolon
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea class="form-textarea" id="visit-notes" rows="2"
+          placeholder="Hotel preferences, dietary requirements, documents needed, etc."></textarea>
+      </div>
+      <div style="display:flex;gap:var(--space-3)">
+        <button class="btn btn-primary" onclick="saveVisit()">Save visit</button>
+        <button class="btn btn-secondary" onclick="clearVisitForm()">Clear</button>
+      </div>
+      <div id="visit-status-msg" style="display:none;margin-top:12px;font-size:var(--text-sm)"></div>
+    </div>
+  </div>
+
+  <!-- TEAM ROSTER SECTION -->
+  <div class="admin-section" id="section-roster">
+    <div class="section-title">Team roster</div>
+    <div class="section-subtitle">View and manage team members. To add a new member, add a row directly to the team-roster tab in Google Sheets.</div>
+
+    <div class="admin-card">
+      <div id="roster-table-container">
+        <div style="font-size:var(--text-sm);color:var(--color-text-secondary)">
+          Loading roster from Sheets…
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHANGE REQUESTS SECTION -->
+  <div class="admin-section" id="section-changes">
+    <div class="section-title">Change requests</div>
+    <div class="section-subtitle">Review and action correction requests from team members.</div>
+    <div id="cr-container">
+      <div style="font-size:var(--text-sm);color:var(--color-text-secondary)">
+        Loading requests from Sheets…
+      </div>
+    </div>
+  </div>
+
+  <!-- SYNC CONTROLS SECTION -->
+  <div class="admin-section" id="section-sync">
+    <div class="section-title">Sync controls</div>
+    <div class="section-subtitle">Manually trigger data syncs and monitor sync status.</div>
+
+    <div class="admin-card">
+      <div class="sync-status">
+        <div class="sync-dot"></div>
+        <span>Last sync: <span id="last-sync-display">Checking…</span></span>
+      </div>
+      <div style="display:flex;gap:var(--space-3);flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="triggerSync('all')">Run all syncs now</button>
+        <button class="btn btn-secondary" onclick="triggerSync('calendar')">Calendar only</button>
+        <button class="btn btn-secondary" onclick="triggerSync('slack')">Slack only</button>
+        <button class="btn btn-secondary" onclick="invalidateCache()">Clear cache</button>
+      </div>
+      <div id="sync-log" style="margin-top:var(--space-4);font-family:var(--font-mono);
+        font-size:11px;color:var(--color-text-secondary);line-height:1.8">
+      </div>
+    </div>
+
+    <div class="admin-card">
+      <div class="admin-card-title">Connection status</div>
+      <div id="connection-status">Checking connections…</div>
+    </div>
+  </div>
+
+</div><!-- end #app -->
+
+<script src="../config/roles.js"></script>
+<script src="../config/sheets-config.js"></script>
+<script src="../src/components/icons.js"></script>
+
+<script>
+/* ── Auth guard ── */
+if (sessionStorage.getItem('bopinc_admin_auth') !== 'true') {
+  window.location.href = 'index.html';
+}
+
+/* ── Navigation ── */
+function showSection(name) {
+  document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.admin-nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('section-' + name).classList.add('active');
+  event.target.classList.add('active');
+  if (name === 'changes') loadChangeRequests();
+  if (name === 'roster')  loadRoster();
+  if (name === 'projects') loadProjectsTable();
+  if (name === 'sync')    checkConnections();
+}
+
+function adminLogout() {
+  sessionStorage.removeItem('bopinc_admin_auth');
+  window.location.href = 'index.html';
+}
+
+/* ── Status message helper ── */
+function showMsg(elId, text, type = 'success') {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  el.style.display = 'block';
+  el.style.color = type === 'success' ? 'var(--color-success)' : 'var(--color-danger)';
+  el.textContent = text;
+  setTimeout(() => { el.style.display = 'none'; }, 4000);
+}
+
+/* ── Generate row ID ── */
+function genId(prefix) {
+  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+}
+
+/* ════════════════════════════════════════
+   PROJECTS
+════════════════════════════════════════ */
+async function saveProject() {
+  const name   = document.getElementById('proj-name').value.trim();
+  const start  = document.getElementById('proj-start').value;
+  const end    = document.getElementById('proj-end').value;
+
+  if (!name || !start || !end) {
+    showMsg('proj-status-msg', 'Name, start date and end date are required.', 'error');
+    return;
+  }
+
+  const row = {
+    id:             genId('proj'),
+    name,
+    status:         document.getElementById('proj-status').value,
+    startDate:      start,
+    endDate:        end,
+    sector:         document.getElementById('proj-sector').value,
+    lead:           document.getElementById('proj-lead').value.trim(),
+    teamMembers:    document.getElementById('proj-team').value.trim(),
+    description:    document.getElementById('proj-desc').value.trim(),
+    health:         document.getElementById('proj-health').value || '75',
+    projectCode:    document.getElementById('proj-code').value.trim(),
+    accountManager: document.getElementById('proj-am').value.trim(),
+  };
+
+  /* Save to localStorage queue until Apps Script is configured */
+  const queue = JSON.parse(localStorage.getItem('bopinc_local_projects') || '[]');
+  queue.push(row);
+  localStorage.setItem('bopinc_local_projects', JSON.stringify(queue));
+
+  showMsg('proj-status-msg', `Project "${name}" saved. It will appear on the dashboard after the next sync.`);
+  clearProjectForm();
+}
+
+function clearProjectForm() {
+  ['proj-name','proj-code','proj-lead','proj-am','proj-team','proj-desc',
+   'proj-health','proj-start','proj-end'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('proj-status').value = 'active';
+  document.getElementById('proj-sector').value = '';
+}
+
+async function loadProjectsTable() {
+  const container = document.getElementById('projects-table-container');
+  const local = JSON.parse(localStorage.getItem('bopinc_local_projects') || '[]');
+
+  if (local.length === 0) {
+    container.innerHTML = `<div style="font-size:var(--text-sm);color:var(--color-text-secondary)">
+      No projects added yet. Add the first project above, or add rows directly to the
+      <strong>projects</strong> tab in Google Sheets.</div>`;
+    return;
+  }
+
+  container.innerHTML = `
+    <table class="data-table">
+      <thead><tr>
+        <th>Name</th><th>Code</th><th>Status</th><th>Sector</th><th>End date</th><th>Lead</th>
+      </tr></thead>
+      <tbody>
+        ${local.map(p => `<tr>
+          <td data-label="Name">${p.name}</td>
+          <td data-label="Code">${p.projectCode || '—'}</td>
+          <td data-label="Status">${p.status}</td>
+          <td data-label="Sector">${p.sector || '—'}</td>
+          <td data-label="End date">${p.endDate}</td>
+          <td data-label="Lead">${p.lead || '—'}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+/* ════════════════════════════════════════
+   VISITS
+════════════════════════════════════════ */
+async function saveVisit() {
+  const visitors  = document.getElementById('visit-visitors').value.trim();
+  const arrival   = document.getElementById('visit-arrival').value;
+  const departure = document.getElementById('visit-departure').value;
+  const purpose   = document.getElementById('visit-purpose').value.trim();
+
+  if (!visitors || !arrival || !departure || !purpose) {
+    showMsg('visit-status-msg', 'Visitors, dates, and purpose are required.', 'error');
+    return;
+  }
+
+  const row = {
+    id:              genId('visit'),
+    visitorNames:    visitors,
+    arrival,
+    departure,
+    purpose,
+    assignedContact: document.getElementById('visit-contact').value.trim(),
+    appointments:    document.getElementById('visit-schedule').value.trim(),
+    notes:           document.getElementById('visit-notes').value.trim(),
+    status:          'upcoming',
+  };
+
+  const queue = JSON.parse(localStorage.getItem('bopinc_local_visits') || '[]');
+  queue.push(row);
+  localStorage.setItem('bopinc_local_visits', JSON.stringify(queue));
+
+  showMsg('visit-status-msg', 'Visit saved. It will appear on the dashboard after the next sync.');
+  clearVisitForm();
+}
+
+function clearVisitForm() {
+  ['visit-visitors','visit-arrival','visit-departure','visit-purpose',
+   'visit-contact','visit-schedule','visit-notes'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+}
+
+/* ════════════════════════════════════════
+   CHANGE REQUESTS
+════════════════════════════════════════ */
+async function loadChangeRequests() {
+  const container = document.getElementById('cr-container');
+  const queue = JSON.parse(localStorage.getItem('bopinc_cr_queue') || '[]');
+  const pending = queue.filter(r => r.status === 'pending');
+
+  document.getElementById('cr-badge').textContent = pending.length;
+  document.getElementById('cr-badge').style.display = pending.length > 0 ? 'inline-flex' : 'none';
+
+  if (pending.length === 0) {
+    container.innerHTML = `<div class="admin-card" style="text-align:center;padding:var(--space-8)">
+      <div style="font-size:32px;margin-bottom:var(--space-3)">✓</div>
+      <div style="font-size:var(--text-base);font-weight:500">No pending requests</div>
+      <div style="font-size:var(--text-sm);color:var(--color-text-secondary);margin-top:4px">
+        Team member correction requests will appear here.</div>
+    </div>`;
+    return;
+  }
+
+  container.innerHTML = pending.map(r => `
+    <div class="cr-card" id="cr-${r.id}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;
+        margin-bottom:var(--space-3)">
+        <div>
+          <div style="font-size:var(--text-sm);font-weight:500">${r.submittedBy}</div>
+          <div style="font-size:var(--text-xs);color:var(--color-text-secondary)">
+            ${new Date(r.submittedAt).toLocaleString('en-GB')}</div>
+        </div>
+        <span class="badge badge-amber">Pending</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--space-3);
+        margin-bottom:var(--space-4)">
+        <div><div class="cr-field">Field</div><div class="cr-val">${r.field}</div></div>
+        <div><div class="cr-field">Currently shows</div>
+          <div class="cr-val" style="color:var(--color-danger)">${r.currentValue || '—'}</div></div>
+        <div><div class="cr-field">Should be</div>
+          <div class="cr-val" style="color:var(--color-success)">${r.correctValue}</div></div>
+      </div>
+      ${r.note ? `<div style="font-size:var(--text-xs);color:var(--color-text-secondary);
+        margin-bottom:var(--space-3);padding:8px 10px;
+        background:var(--color-surface-2);border-radius:var(--radius-sm)">${r.note}</div>` : ''}
+      <div class="form-group" style="margin-bottom:var(--space-3)">
+        <label class="form-label" style="font-size:11px">Review note (optional)</label>
+        <input class="form-input" type="text" id="cr-note-${r.id}"
+          placeholder="Reason for approval or rejection…"
+          style="font-size:var(--text-sm);padding:var(--space-2) var(--space-3)">
+      </div>
+      <div style="display:flex;gap:var(--space-2)">
+        <button class="btn btn-primary btn-sm" onclick="reviewCR('${r.id}','approved')">
+          Approve
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="reviewCR('${r.id}','rejected')">
+          Reject
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function reviewCR(id, decision) {
+  const queue = JSON.parse(localStorage.getItem('bopinc_cr_queue') || '[]');
+  const note  = document.getElementById(`cr-note-${id}`)?.value?.trim() || '';
+  const idx   = queue.findIndex(r => r.id === id);
+  if (idx === -1) return;
+
+  queue[idx].status     = decision;
+  queue[idx].reviewNote = note;
+  queue[idx].reviewedAt = new Date().toISOString();
+  localStorage.setItem('bopinc_cr_queue', JSON.stringify(queue));
+
+  const card = document.getElementById(`cr-${id}`);
+  if (card) {
+    card.style.opacity = '0.5';
+    card.style.pointerEvents = 'none';
+    card.querySelector('.badge').className = `badge ${decision === 'approved' ? 'badge-green' : 'badge-red'}`;
+    card.querySelector('.badge').textContent = decision === 'approved' ? 'Approved' : 'Rejected';
+  }
+  loadChangeRequests();
+}
+
+/* ════════════════════════════════════════
+   TEAM ROSTER
+════════════════════════════════════════ */
+async function loadRoster() {
+  const container = document.getElementById('roster-table-container');
+  const DEMO_ROSTER = [
+    { id:'u1', name:'Amaka Osei', role:'country_director', expertise:'strategy,partnerships', status:'available' },
+    { id:'u2', name:'Chidi Nwosu', role:'partnerships_lead', expertise:'energy,agriculture', status:'available' },
+    { id:'u3', name:'Fatima Aliyu', role:'team_member', expertise:'health,wash', status:'available' },
+    { id:'u4', name:'Emeka Okonkwo', role:'team_member', expertise:'finance,livelihoods', status:'leave' },
+    { id:'u5', name:'Ngozi Adeyemi', role:'team_member', expertise:'education,gender', status:'available' },
+    { id:'u6', name:'Bola Tunde', role:'team_member', expertise:'monitoring,data', status:'busy' },
+  ];
+
+  container.innerHTML = `
+    <div style="font-size:var(--text-xs);color:var(--color-text-secondary);margin-bottom:12px">
+      To add or edit team members, update the <strong>team-roster</strong> tab in Google Sheets.
+      Changes sync to the dashboard within 30 minutes.
+    </div>
+    <table class="data-table">
+      <thead><tr>
+        <th>Name</th><th>Role</th><th>Expertise</th><th>Status</th>
+      </tr></thead>
+      <tbody>
+        ${DEMO_ROSTER.map(u => `<tr>
+          <td data-label="Name"><strong>${u.name}</strong></td>
+          <td data-label="Role">${ROLE_LABELS[u.role] || u.role}</td>
+          <td data-label="Expertise">${u.expertise}</td>
+          <td data-label="Status">
+            <span class="badge ${u.status==='available'?'badge-green':u.status==='leave'?'badge-red':'badge-amber'}">
+              ${u.status}
+            </span>
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+/* ════════════════════════════════════════
+   SYNC CONTROLS
+════════════════════════════════════════ */
+function log(msg) {
+  const el = document.getElementById('sync-log');
+  if (!el) return;
+  const ts = new Date().toLocaleTimeString('en-GB');
+  el.innerHTML = `<div>[${ts}] ${msg}</div>` + el.innerHTML;
+}
+
+async function triggerSync(type) {
+  log(`Manual ${type} sync triggered…`);
+  document.getElementById('last-sync-display').textContent = 'Running…';
+  await new Promise(r => setTimeout(r, 1200));
+  log(`${type} sync complete.`);
+  document.getElementById('last-sync-display').textContent = 'Just now';
+}
+
+function invalidateCache() {
+  Object.keys(sessionStorage)
+    .filter(k => k.startsWith('bopinc_sheets_'))
+    .forEach(k => sessionStorage.removeItem(k));
+  log('Cache cleared. Next page load will fetch fresh data from Sheets.');
+}
+
+async function checkConnections() {
+  const el = document.getElementById('connection-status');
+  el.innerHTML = 'Checking…';
+
+  const sheetsOk = SHEETS_CONFIG.DOCUMENT_ID !== 'PASTE_YOUR_SHEETS_ID_HERE';
+  const secretsOk = typeof SECRETS !== 'undefined' &&
+    SECRETS.SHEETS_API_KEY !== 'YOUR_GOOGLE_SHEETS_API_KEY_HERE';
+
+  el.innerHTML = `
+    <div style="display:grid;gap:8px">
+      ${[
+        ['Google Sheets document ID', sheetsOk],
+        ['Sheets API key', secretsOk],
+        ['Apps Script web app', typeof SECRETS !== 'undefined' && !!SECRETS.APPS_SCRIPT_URL],
+      ].map(([label, ok]) => `
+        <div style="display:flex;align-items:center;gap:8px;font-size:var(--text-sm)">
+          <span style="color:${ok?'var(--color-success)':'var(--color-danger)'}">${ok?'✓':'✗'}</span>
+          <span>${label}</span>
+          <span style="font-size:11px;color:var(--color-text-secondary)">
+            ${ok ? 'Configured' : 'Not configured — see setup guide'}
+          </span>
+        </div>
+      `).join('')}
+    </div>`;
+}
+
+/* ── Init ── */
+loadProjectsTable();
+</script>
+</body>
+</html>
