@@ -108,7 +108,7 @@ const ChangeRequest = {
     if (overlay) overlay.classList.remove('open');
   },
 
-  submit() {
+  async submit() {
     const session = Session.get();
     const field   = document.getElementById('cr-field').value;
     const current = document.getElementById('cr-current').value.trim();
@@ -132,11 +132,13 @@ const ChangeRequest = {
       submittedAt: new Date().toISOString(),
     };
 
-    /* Phase 1: store in localStorage as a queue */
-    /* Phase 2 upgrade: POST to Sheets pending-changes tab */
-    const queue = JSON.parse(localStorage.getItem('bopinc_cr_queue') || '[]');
-    queue.push(request);
-    localStorage.setItem('bopinc_cr_queue', JSON.stringify(queue));
+    /* Phase 2: POST to Sheets pending-changes tab via SheetsClient */
+    /* Falls back to localStorage if Apps Script URL not yet configured */
+    const result = await SheetsClient.append(SHEETS_CONFIG.TABS.PENDING_CHANGES, request);
+
+    if (!result.success && !result.fallback) {
+      Toast.show('Could not submit request — saved locally instead.', 'warning');
+    }
 
     /* Show confirmation */
     document.getElementById('cr-status').style.display = 'flex';
