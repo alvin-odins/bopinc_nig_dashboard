@@ -1,23 +1,25 @@
-
 /* ============================================================
-   BOPinc Nigeria Dashboard — Opportunities Pipeline Swimlane
+   BOPinc Nigeria Dashboard — Opportunities Ranked Bar Chart
    File: src/components/chart-bubble.js
- 
-   Four-column kanban swimlane: Active · Pipeline · At risk · Won
-   Each column shows stage total value and opportunity count.
-   Each card shows: name, funder + sector, probability bar,
-   value pill, deadline with urgency colour.
-   Click any card → onSelect(opp) → detail panel opens.
- 
-   Pure HTML/CSS. No SVG, no coordinate system, no scaling.
- 
+
+   Ranked horizontal bar chart — opportunities sorted by
+   funding value descending. Each row shows:
+     · Coloured left border  = status
+     · Bar length            = funding value (vs axis max)
+     · Value label           = inside bar if wide, outside if narrow
+     · Right column          = win probability % in colour
+     · Deadline              = urgency colour beneath probability
+
+   Pure HTML/CSS — no SVG, no coordinate system.
+   Designed for 8–20 opportunities. Responsive.
+
    Usage:
      ChartBubble.render(containerId, opportunities, options)
      options: { onSelect: (opp) => {} }
 ============================================================ */
- 
+
 const ChartBubble = {
- 
+
   STATUS: {
     active:   { fill:'#2e6843', light:'#d4edd9', text:'#1a3d27', label:'Active'   },
     pipeline: { fill:'#1d4ed8', light:'#dbeafe', text:'#1e3a8a', label:'Pipeline' },
@@ -25,11 +27,9 @@ const ChartBubble = {
     won:      { fill:'#0f6e56', light:'#ccfbf1', text:'#065f46', label:'Won'      },
     closed:   { fill:'#64748b', light:'#f1f5f9', text:'#334155', label:'Closed'   },
   },
- 
-  STAGES: ['active','pipeline','at-risk','won'],
- 
+
   get STATUS_COLOURS() { return this.STATUS; },
- 
+
   render(containerId, opps = [], opts = {}) {
     const el = document.getElementById(containerId);
     if (!el) return;
@@ -37,192 +37,247 @@ const ChartBubble = {
     el.innerHTML = this._build(opps);
     this._wire(el, opps, opts);
   },
- 
+
   _fmt(v) {
     const n = parseFloat(v) || 0;
     if (n >= 1000000) return `$${(n/1000000).toFixed(1)}M`;
     if (n >= 1000)    return `$${(n/1000).toFixed(0)}K`;
     return `$${n}`;
   },
- 
-  _deadline(dateStr) {
-    if (!dateStr) return { label: null, colour: null };
-    const days = Math.ceil((new Date(dateStr) - new Date()) / 86400000);
-    if (days < 0)   return { label: 'Overdue',       colour: '#dc2626' };
-    if (days <= 14) return { label: `${days}d left`,  colour: '#dc2626' };
-    if (days <= 45) return { label: `${days}d left`,  colour: '#d97706' };
-    const d = new Date(dateStr);
-    return {
-      label: d.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }),
-      colour: 'var(--color-text-tertiary)',
-    };
-  },
- 
+
   _build(opps) {
-    const columns = this.STAGES.map(stage => {
-      const s     = this.STATUS[stage];
-      const cards = opps
-        .filter(o => o.status === stage)
-        .sort((a,b) => (parseFloat(b.probability)||0) - (parseFloat(a.probability)||0));
-      const total = cards.reduce((sum,o) => sum + (parseFloat(o.value)||0), 0);
- 
-      /* ── Column header ── */
-      const header = `
+    /* Sort by value descending */
+    const sorted = [...opps].sort((a,b) =>
+      (parseFloat(b.value)||0) - (parseFloat(a.value)||0)
+    );
+
+    const maxVal = parseFloat(sorted[0]?.value) || 1;
+
+    /* Round axis max to clean number */
+    const mag    = Math.pow(10, Math.floor(Math.log10(maxVal)));
+    const axMax  = Math.ceil(maxVal / mag) * mag;
+
+    /* ── Column header ── */
+    const header = `
+      <div style="
+        display:flex;align-items:center;
+        padding-bottom:8px;
+        margin-bottom:6px;
+        border-bottom:1px solid var(--color-border)">
         <div style="
-          display:flex;align-items:center;justify-content:space-between;
-          padding-bottom:10px;margin-bottom:10px;
-          border-bottom:2px solid ${s.fill}">
-          <div style="display:flex;align-items:center;gap:6px">
-            <div style="width:8px;height:8px;border-radius:50%;background:${s.fill}"></div>
-            <span style="font-size:13px;font-weight:500;color:var(--color-text-primary)">
-              ${s.label}
-            </span>
-            <span style="
-              background:${s.light};color:${s.text};
-              font-size:10px;font-weight:500;
-              padding:1px 7px;border-radius:10px">
-              ${cards.length}
-            </span>
-          </div>
-          ${total > 0 ? `
-            <span style="font-size:12px;font-weight:500;color:${s.fill}">
-              ${this._fmt(total)}
-            </span>` : ''}
-        </div>`;
- 
-      /* ── Cards ── */
-      const cardHtml = cards.map((opp, i) => {
-        const prob    = parseFloat(opp.probability) || 0;
-        const probCol = prob >= 70 ? '#2e6843' : prob >= 40 ? '#d97706' : '#dc2626';
-        const dl      = this._deadline(opp.deadline);
-        const val     = this._fmt(opp.value);
- 
-        return `
-          <div class="sw-card" data-id="${opp.id}"
-            role="button" tabindex="0"
-            aria-label="${opp.name}, ${s.label}, ${val}"
-            style="
-              background:var(--color-surface);
-              border:1px solid var(--color-border);
-              border-top:3px solid ${s.fill};
-              border-radius:0 0 var(--radius-md) var(--radius-md);
-              padding:12px;
-              margin-bottom:8px;
-              cursor:pointer;
-              transition:border-color .12s, transform .1s;
-            ">
- 
-            <!-- Name -->
+          width:176px;flex-shrink:0;
+          font-size:10px;font-weight:500;
+          text-transform:uppercase;letter-spacing:.04em;
+          color:var(--color-text-tertiary);
+          padding-left:12px">
+          Opportunity
+        </div>
+        <div style="flex:1;position:relative;height:16px">
+          ${[0,0.25,0.5,0.75,1].map(f => `
+            <div style="
+              position:absolute;
+              left:${f*100}%;
+              transform:translateX(-50%);
+              font-size:10px;
+              color:var(--color-text-tertiary);
+              white-space:nowrap">
+              ${f === 0 ? '$0' : this._fmt(axMax * f)}
+            </div>`).join('')}
+        </div>
+        <div style="
+          width:76px;flex-shrink:0;
+          font-size:10px;font-weight:500;
+          text-transform:uppercase;letter-spacing:.04em;
+          color:var(--color-text-tertiary);
+          text-align:right">
+          Win %
+        </div>
+      </div>`;
+
+    /* ── Rows ── */
+    const rows = sorted.map(opp => {
+      const s       = this.STATUS[opp.status] || this.STATUS.pipeline;
+      const val     = parseFloat(opp.value) || 0;
+      const barPct  = Math.round((val / axMax) * 100);
+      const prob    = parseFloat(opp.probability) || 0;
+      const probCol = prob >= 70 ? '#2e6843' : prob >= 40 ? '#d97706' : '#dc2626';
+      const valStr  = this._fmt(val);
+
+      /* Deadline */
+      let dlLabel = '', dlCol = 'var(--color-text-tertiary)';
+      if (opp.deadline) {
+        const days = Math.ceil((new Date(opp.deadline) - new Date()) / 86400000);
+        if      (days < 0)   { dlLabel = 'Overdue';      dlCol = '#dc2626'; }
+        else if (days <= 14) { dlLabel = `${days}d`;     dlCol = '#dc2626'; }
+        else if (days <= 45) { dlLabel = `${days}d`;     dlCol = '#d97706'; }
+        else {
+          dlLabel = new Date(opp.deadline)
+            .toLocaleDateString('en-GB', { day:'numeric', month:'short' });
+        }
+      }
+
+      /* Gridlines at 25 / 50 / 75 % */
+      const gridLines = [0.25, 0.5, 0.75].map(f => `
+        <div style="
+          position:absolute;left:${f*100}%;top:0;bottom:0;
+          width:1px;background:var(--color-border);opacity:0.6">
+        </div>`).join('');
+
+      return `
+        <div class="opp-bar-row" data-id="${opp.id}"
+          role="button" tabindex="0"
+          aria-label="${opp.name}, ${s.label}, ${valStr}, ${prob}% probability"
+          style="
+            display:flex;align-items:center;
+            padding:5px 0;
+            border-bottom:0.5px solid var(--color-border);
+            cursor:pointer;
+            border-radius:3px;
+            transition:background .1s">
+
+          <!-- Name column: 176px fixed -->
+          <div style="
+            width:176px;flex-shrink:0;
+            border-left:3px solid ${s.fill};
+            padding:0 10px 0 9px">
             <div style="
               font-size:12px;font-weight:500;
               color:var(--color-text-primary);
-              line-height:1.35;margin-bottom:4px">
+              line-height:1.3;
+              white-space:nowrap;overflow:hidden;
+              text-overflow:ellipsis"
+              title="${opp.name}">
               ${opp.name}
             </div>
- 
-            <!-- Funder + sector -->
             <div style="
-              font-size:11px;color:var(--color-text-secondary);
-              margin-bottom:10px;
-              display:flex;gap:5px;flex-wrap:wrap;align-items:center">
-              <span>${opp.funder || '—'}</span>
-              <span style="color:var(--color-border-strong)">·</span>
-              <span style="
-                background:var(--color-surface-2);
-                padding:0 5px;border-radius:3px;
-                font-size:10px;color:var(--color-text-secondary)">
-                ${opp.sector}
-              </span>
+              font-size:10px;color:var(--color-text-tertiary);
+              margin-top:1px;
+              white-space:nowrap;overflow:hidden;
+              text-overflow:ellipsis">
+              ${opp.funder || opp.sector}
             </div>
- 
-            <!-- Probability bar -->
-            <div style="margin-bottom:10px">
-              <div style="
-                display:flex;justify-content:space-between;
-                font-size:10px;color:var(--color-text-tertiary);
-                margin-bottom:4px">
-                <span>Win probability</span>
-                <span style="font-weight:500;color:${probCol}">${prob}%</span>
-              </div>
-              <div style="
-                height:3px;background:var(--color-surface-2);
-                border-radius:2px;overflow:hidden">
-                <div style="
-                  height:100%;width:${prob}%;
-                  background:${probCol};border-radius:2px">
-                </div>
-              </div>
-            </div>
- 
-            <!-- Value + deadline -->
+          </div>
+
+          <!-- Bar track: flex:1 -->
+          <div style="
+            flex:1;
+            height:30px;
+            position:relative;
+            background:var(--color-surface-2);
+            border-radius:3px;
+            overflow:hidden">
+
+            ${gridLines}
+
+            <!-- Filled bar -->
             <div style="
+              position:absolute;
+              left:0;top:4px;bottom:4px;
+              width:${barPct}%;
+              background:${s.fill};
+              border-radius:2px;
+              opacity:0.85;
               display:flex;align-items:center;
-              justify-content:space-between">
-              <span style="
-                background:${s.light};color:${s.text};
-                font-size:11px;font-weight:500;
-                padding:2px 8px;border-radius:4px">
-                ${val}
-              </span>
-              ${dl.label ? `
+              padding-left:7px;
+              overflow:hidden;
+              min-width:2px">
+              ${barPct > 18 ? `
                 <span style="
                   font-size:10px;font-weight:500;
-                  color:${dl.colour}">
-                  ${dl.label}
+                  color:#fff;white-space:nowrap;
+                  pointer-events:none">
+                  ${valStr}
                 </span>` : ''}
             </div>
- 
-          </div>`;
-      }).join('');
- 
-      /* ── Empty column state ── */
-      const empty = cards.length === 0 ? `
-        <div style="
-          border:1px dashed var(--color-border);
-          border-radius:var(--radius-md);
-          padding:20px 12px;
-          text-align:center;
-          font-size:11px;
-          color:var(--color-text-tertiary)">
-          No ${s.label.toLowerCase()} opportunities
-        </div>` : '';
- 
-      return `
-        <div style="min-width:0">
-          ${header}
-          ${cardHtml}
-          ${empty}
+
+            <!-- Value outside bar when bar is short -->
+            ${barPct <= 18 ? `
+              <div style="
+                position:absolute;
+                left:${barPct}%;top:50%;
+                transform:translateY(-50%);
+                padding-left:6px;
+                font-size:10px;font-weight:500;
+                color:var(--color-text-secondary);
+                white-space:nowrap;
+                pointer-events:none">
+                ${valStr}
+              </div>` : ''}
+          </div>
+
+          <!-- Probability + deadline: 76px fixed -->
+          <div style="
+            width:76px;flex-shrink:0;
+            padding-left:12px;
+            display:flex;flex-direction:column;
+            align-items:flex-end;gap:2px">
+            <span style="
+              font-size:13px;font-weight:500;
+              color:${probCol}">
+              ${prob}%
+            </span>
+            ${dlLabel ? `
+              <span style="
+                font-size:10px;font-weight:500;
+                color:${dlCol}">
+                ${dlLabel}
+              </span>` : ''}
+          </div>
+
         </div>`;
     }).join('');
- 
+
+    /* ── Legend ── */
+    const usedStatuses = [...new Set(sorted.map(o => o.status))];
+    const legend = usedStatuses.map(st => {
+      const s = this.STATUS[st] || this.STATUS.pipeline;
+      return `
+        <div style="display:flex;align-items:center;gap:5px;font-size:11px">
+          <div style="
+            width:10px;height:10px;border-radius:2px;
+            background:${s.fill};flex-shrink:0">
+          </div>
+          <span style="color:var(--color-text-secondary)">${s.label}</span>
+        </div>`;
+    }).join('');
+
     return `
-      <div style="
-        display:grid;
-        grid-template-columns:repeat(4,minmax(0,1fr));
-        gap:16px;
-        align-items:start;
-        overflow-x:auto">
-        ${columns}
+      <div>
+        ${header}
+        <div>${rows}</div>
+        <div style="
+          display:flex;align-items:center;
+          justify-content:space-between;
+          flex-wrap:wrap;gap:8px;
+          margin-top:12px;padding-top:10px;
+          border-top:0.5px solid var(--color-border)">
+          <div style="display:flex;gap:12px;flex-wrap:wrap">${legend}</div>
+          <span style="font-size:10px;color:var(--color-text-tertiary)">
+            Sorted by value · click any row for full details
+          </span>
+        </div>
       </div>`;
   },
- 
+
   _wire(el, opps, opts) {
-    el.querySelectorAll('.sw-card').forEach(card => {
-      const opp = opps.find(o => o.id === card.dataset.id);
+    const sorted = [...opps].sort((a,b) =>
+      (parseFloat(b.value)||0) - (parseFloat(a.value)||0)
+    );
+
+    el.querySelectorAll('.opp-bar-row').forEach(row => {
+      const opp = sorted.find(o => o.id === row.dataset.id);
       if (!opp) return;
- 
-      card.addEventListener('mouseenter', () => {
-        card.style.borderColor  = this.STATUS[opp.status]?.fill || 'var(--color-border)';
-        card.style.transform    = 'translateY(-1px)';
+
+      row.addEventListener('mouseenter', () => {
+        row.style.background = 'var(--color-surface-2)';
       });
-      card.addEventListener('mouseleave', () => {
-        card.style.borderColor  = 'var(--color-border)';
-        card.style.transform    = '';
+      row.addEventListener('mouseleave', () => {
+        row.style.background = '';
       });
-      card.addEventListener('click', () => {
+      row.addEventListener('click', () => {
         if (opts.onSelect) opts.onSelect(opp);
       });
-      card.addEventListener('keydown', e => {
+      row.addEventListener('keydown', e => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           if (opts.onSelect) opts.onSelect(opp);
@@ -230,7 +285,7 @@ const ChartBubble = {
       });
     });
   },
- 
+
   _empty() {
     return `
       <div class="coming-soon">
@@ -239,6 +294,6 @@ const ChartBubble = {
         <p>Add opportunities to the opportunities tab in Google Sheets.</p>
       </div>`;
   },
- 
+
   formatValue(v) { return this._fmt(v); },
 };
