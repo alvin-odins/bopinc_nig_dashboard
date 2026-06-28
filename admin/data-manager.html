@@ -13,20 +13,14 @@
     #app { padding-top: 56px; }
     #admin-header {
       position: fixed; top: 0; left: 0; right: 0;
-      height: 56px;
-      background: var(--green-950);
+      height: 56px; background: var(--green-950);
       display: flex; align-items: center;
       padding: 0 var(--space-5); gap: var(--space-4);
       z-index: 200;
     }
-    .admin-header-logo {
-      font-size: var(--text-sm); font-weight: 600;
-      color: var(--green-100); white-space: nowrap;
-    }
+    .admin-header-logo { font-size: var(--text-sm); font-weight: 600; color: var(--green-100); white-space: nowrap; }
     .admin-header-spacer { flex: 1; }
-    .admin-nav {
-      display: flex; gap: 2px; overflow-x: auto;
-    }
+    .admin-nav { display: flex; gap: 2px; overflow-x: auto; }
     .admin-nav-btn {
       padding: 6px 12px; border-radius: var(--radius-md);
       font-size: var(--text-xs); font-weight: 500;
@@ -34,54 +28,33 @@
       cursor: pointer; white-space: nowrap;
       transition: background var(--transition-fast), color var(--transition-fast);
     }
-    .admin-nav-btn:hover { background: var(--green-900); color: var(--white); }
+    .admin-nav-btn:hover  { background: var(--green-900); color: var(--white); }
     .admin-nav-btn.active { background: var(--green-800); color: var(--white); }
     .admin-section { display: none; padding: var(--space-6); max-width: 900px; }
     .admin-section.active { display: block; }
-    .section-title {
-      font-size: var(--text-xl); font-weight: 600;
-      margin-bottom: var(--space-2); color: var(--color-text-primary);
-    }
-    .section-subtitle {
-      font-size: var(--text-sm); color: var(--color-text-secondary);
-      margin-bottom: var(--space-6);
-    }
+    .section-title { font-size: var(--text-xl); font-weight: 600; margin-bottom: var(--space-2); color: var(--color-text-primary); }
+    .section-subtitle { font-size: var(--text-sm); color: var(--color-text-secondary); margin-bottom: var(--space-6); }
     .admin-card {
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-lg);
-      padding: var(--space-5);
-      margin-bottom: var(--space-4);
+      background: var(--color-surface); border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg); padding: var(--space-5); margin-bottom: var(--space-4);
     }
     .admin-card-title {
-      font-size: var(--text-base); font-weight: 600;
-      margin-bottom: var(--space-4);
-      padding-bottom: var(--space-3);
-      border-bottom: 1px solid var(--color-border);
+      font-size: var(--text-base); font-weight: 600; margin-bottom: var(--space-4);
+      padding-bottom: var(--space-3); border-bottom: 1px solid var(--color-border);
     }
     .form-row { display: grid; gap: var(--space-4); margin-bottom: var(--space-4); }
     .form-row-2 { grid-template-columns: 1fr 1fr; }
     .form-row-3 { grid-template-columns: 1fr 1fr 1fr; }
-    .status-badge {
-      display: inline-flex; align-items: center; gap: 6px;
-      font-size: var(--text-xs); font-weight: 500;
-      padding: 4px 10px; border-radius: var(--radius-full);
-    }
-    .cr-card {
-      border: 1px solid var(--color-border); border-radius: var(--radius-md);
-      padding: var(--space-4); margin-bottom: var(--space-3);
-    }
+    .cr-card { border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--space-4); margin-bottom: var(--space-3); }
     .cr-field { font-size: var(--text-xs); color: var(--color-text-secondary); margin-bottom: 2px; }
     .cr-val { font-size: var(--text-sm); }
-    .sync-status {
-      display: flex; align-items: center; gap: 8px;
-      font-size: var(--text-sm); color: var(--color-text-secondary);
-      margin-bottom: var(--space-4);
-    }
+    .sync-status { display: flex; align-items: center; gap: 8px; font-size: var(--text-sm); color: var(--color-text-secondary); margin-bottom: var(--space-4); }
     .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-success); }
-    @media (max-width: 640px) {
-      .form-row-2, .form-row-3 { grid-template-columns: 1fr; }
-    }
+    .tbl-actions { display: flex; gap: 6px; }
+    .audit-entry { font-size: 12px; padding: 5px 0; border-bottom: 0.5px solid var(--color-border); display: flex; gap: 10px; }
+    .audit-ts { color: var(--color-text-tertiary); flex-shrink: 0; font-family: var(--font-mono); font-size: 11px; }
+    .audit-msg { flex: 1; color: var(--color-text-secondary); }
+    @media (max-width: 640px) { .form-row-2, .form-row-3 { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
@@ -89,11 +62,16 @@
 <header id="admin-header">
   <div class="admin-header-logo">⚙ BOPinc Admin</div>
   <div class="admin-nav">
-    <button class="admin-nav-btn active" onclick="showSection('projects')">Projects</button>
-    <button class="admin-nav-btn" onclick="showSection('visits')">Visits</button>
-    <button class="admin-nav-btn" onclick="showSection('roster')">Team roster</button>
-    <button class="admin-nav-btn" onclick="showSection('changes')">Change requests <span id="cr-badge" style="display:none;background:var(--amber-400);color:var(--amber-900);border-radius:50%;width:16px;height:16px;font-size:9px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;margin-left:4px">0</span></button>
-    <button class="admin-nav-btn" onclick="showSection('sync')">Sync controls</button>
+    <button class="admin-nav-btn" id="nav-projects"  onclick="showSection('projects')">Projects</button>
+    <button class="admin-nav-btn" id="nav-visits"    onclick="showSection('visits')">Visits</button>
+    <button class="admin-nav-btn" id="nav-roster"    onclick="showSection('roster')">Team roster</button>
+    <button class="admin-nav-btn" id="nav-changes"   onclick="showSection('changes')">Change requests
+      <span id="cr-badge" style="display:none;background:var(--amber-400);color:var(--amber-900);
+        border-radius:50%;width:16px;height:16px;font-size:9px;font-weight:700;
+        display:inline-flex;align-items:center;justify-content:center;margin-left:4px">0</span>
+    </button>
+    <button class="admin-nav-btn" id="nav-sync"     onclick="showSection('sync')">Sync controls</button>
+    <button class="admin-nav-btn" id="nav-settings" onclick="showSection('settings')">Settings</button>
   </div>
   <div class="admin-header-spacer"></div>
   <a href="../index.html" style="font-size:var(--text-xs);color:var(--green-300);text-decoration:none">← Dashboard</a>
@@ -105,208 +83,322 @@
 
 <div id="app">
 
-  <!-- PROJECTS SECTION -->
-  <div class="admin-section active" id="section-projects">
-    <div class="section-title">Projects</div>
-    <div class="section-subtitle">Add and edit active projects. Changes appear on the dashboard immediately after saving.</div>
+<!-- ══ PROJECTS ══ -->
+<div class="admin-section active" id="section-projects">
+  <div class="section-title">Projects</div>
+  <div class="section-subtitle">Add, edit, and remove active projects. Changes appear on the dashboard immediately.</div>
 
-    <div class="admin-card">
-      <div class="admin-card-title">Add new project</div>
-      <div class="form-row form-row-2">
-        <div class="form-group">
-          <label class="form-label">Project name *</label>
-          <input class="form-input" type="text" id="proj-name" placeholder="e.g. WASH-NG Phase 2">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Project code</label>
-          <input class="form-input" type="text" id="proj-code" placeholder="e.g. WASH-NG-24">
-        </div>
-      </div>
-      <div class="form-row form-row-3">
-        <div class="form-group">
-          <label class="form-label">Status *</label>
-          <select class="form-select" id="proj-status">
-            <option value="active">Active</option>
-            <option value="at-risk">At risk</option>
-            <option value="delayed">Delayed</option>
-            <option value="blocked">Blocked</option>
-            <option value="completed">Completed</option>
-            <option value="pipeline">Pipeline</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Sector</label>
-          <select class="form-select" id="proj-sector">
-            <option value="">Select sector</option>
-            <option>Energy</option><option>Agriculture</option>
-            <option>Health</option><option>WASH</option>
-            <option>Education</option><option>Finance</option>
-            <option>Livelihoods</option><option>Gender</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Health score (0–100)</label>
-          <input class="form-input" type="number" id="proj-health" min="0" max="100" placeholder="75">
-        </div>
-      </div>
-      <div class="form-row form-row-2">
-        <div class="form-group">
-          <label class="form-label">Start date *</label>
-          <input class="form-input" type="date" id="proj-start">
-        </div>
-        <div class="form-group">
-          <label class="form-label">End date *</label>
-          <input class="form-input" type="date" id="proj-end">
-        </div>
-      </div>
-      <div class="form-row form-row-2">
-        <div class="form-group">
-          <label class="form-label">Project lead</label>
-          <input class="form-input" type="text" id="proj-lead" placeholder="Full name">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Account manager</label>
-          <input class="form-input" type="text" id="proj-am" placeholder="Full name">
-        </div>
+  <div class="admin-card">
+    <div class="admin-card-title" id="proj-form-title">Add new project</div>
+    <input type="hidden" id="proj-edit-id">
+    <div class="form-row form-row-2">
+      <div class="form-group">
+        <label class="form-label">Project name *</label>
+        <input class="form-input" type="text" id="proj-name" placeholder="e.g. WASH-NG Phase 2">
       </div>
       <div class="form-group">
-        <label class="form-label">Team members</label>
-        <input class="form-input" type="text" id="proj-team"
-          placeholder="Name|Role, Name|Role (e.g. Fatima Aliyu|Health Lead, Bola Tunde|MEL)">
-        <div style="font-size:11px;color:var(--color-text-secondary);margin-top:4px">
-          Format: Name|Role — separate multiple members with a comma
-        </div>
+        <label class="form-label">Project code</label>
+        <input class="form-input" type="text" id="proj-code" placeholder="e.g. WASH-NG-24">
       </div>
-      <div class="form-group">
-        <label class="form-label">Description</label>
-        <textarea class="form-textarea" id="proj-desc" rows="3"
-          placeholder="Brief description of the project goals and scope"></textarea>
-      </div>
-      <div style="display:flex;gap:var(--space-3)">
-        <button class="btn btn-primary" onclick="saveProject()">Save project</button>
-        <button class="btn btn-secondary" onclick="clearProjectForm()">Clear</button>
-      </div>
-      <div id="proj-status-msg" style="display:none;margin-top:12px;font-size:var(--text-sm)"></div>
     </div>
+    <div class="form-row form-row-3">
+      <div class="form-group">
+        <label class="form-label">Status *</label>
+        <select class="form-select" id="proj-status">
+          <option value="active">Active</option>
+          <option value="at-risk">At risk</option>
+          <option value="delayed">Delayed</option>
+          <option value="blocked">Blocked</option>
+          <option value="completed">Completed</option>
+          <option value="pipeline">Pipeline</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Sector</label>
+        <select class="form-select" id="proj-sector">
+          <option value="">Select sector</option>
+          <option>Energy</option><option>Agriculture</option><option>Health</option>
+          <option>WASH</option><option>Education</option><option>Finance</option>
+          <option>Livelihoods</option><option>Gender</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Health score (0–100)</label>
+        <input class="form-input" type="number" id="proj-health" min="0" max="100" placeholder="75">
+      </div>
+    </div>
+    <div class="form-row form-row-2">
+      <div class="form-group">
+        <label class="form-label">Start date *</label>
+        <input class="form-input" type="date" id="proj-start">
+      </div>
+      <div class="form-group">
+        <label class="form-label">End date *</label>
+        <input class="form-input" type="date" id="proj-end">
+      </div>
+    </div>
+    <div class="form-row form-row-2">
+      <div class="form-group">
+        <label class="form-label">Project lead</label>
+        <input class="form-input" type="text" id="proj-lead" placeholder="Full name">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Account manager</label>
+        <input class="form-input" type="text" id="proj-am" placeholder="Full name">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Team members</label>
+      <input class="form-input" type="text" id="proj-team"
+        placeholder="Name|Role, Name|Role (e.g. Fatima Aliyu|Health Lead, Bola Tunde|MEL)">
+      <div style="font-size:11px;color:var(--color-text-secondary);margin-top:4px">
+        Format: Name|Role — separate multiple members with a comma
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Description</label>
+      <textarea class="form-textarea" id="proj-desc" rows="3"
+        placeholder="Brief description of the project goals and scope"></textarea>
+    </div>
+    <div style="display:flex;gap:var(--space-3)">
+      <button class="btn btn-primary" id="proj-save-btn" onclick="saveProject()">Save project</button>
+      <button class="btn btn-secondary" onclick="cancelProjectEdit()">Cancel</button>
+    </div>
+    <div id="proj-status-msg" style="display:none;margin-top:12px;font-size:var(--text-sm)"></div>
+  </div>
 
-    <div class="admin-card">
-      <div class="admin-card-title">Existing projects</div>
-      <div id="projects-table-container">
-        <div style="font-size:var(--text-sm);color:var(--color-text-secondary)">
-          Loading projects from Sheets…
-        </div>
+  <div class="admin-card">
+    <div class="admin-card-title">Existing projects</div>
+    <div id="projects-table-container">
+      <div style="font-size:var(--text-sm);color:var(--color-text-secondary)">Loading projects…</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ VISITS ══ -->
+<div class="admin-section" id="section-visits">
+  <div class="section-title">Visits</div>
+  <div class="section-subtitle">Log and manage incoming visits from the global team and cross-country colleagues.</div>
+
+  <div class="admin-card">
+    <div class="admin-card-title" id="visit-form-title">Add new visit</div>
+    <input type="hidden" id="visit-edit-id">
+    <div class="form-group">
+      <label class="form-label">Visitors *</label>
+      <input class="form-input" type="text" id="visit-visitors"
+        placeholder="Name|Role|Country, Name|Role|Country">
+      <div style="font-size:11px;color:var(--color-text-secondary);margin-top:4px">
+        Format: Name|Role|Country — separate multiple visitors with a comma
+      </div>
+    </div>
+    <div class="form-row form-row-2">
+      <div class="form-group">
+        <label class="form-label">Arrival date *</label>
+        <input class="form-input" type="date" id="visit-arrival">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Departure date *</label>
+        <input class="form-input" type="date" id="visit-departure">
+      </div>
+    </div>
+    <div class="form-row form-row-2">
+      <div class="form-group">
+        <label class="form-label">Purpose *</label>
+        <input class="form-input" type="text" id="visit-purpose"
+          placeholder="e.g. Country strategy review and partner meetings">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Assigned country contact</label>
+        <input class="form-input" type="text" id="visit-contact" placeholder="Team member name">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">In-country schedule</label>
+      <textarea class="form-textarea" id="visit-schedule" rows="4"
+        placeholder="9 Jul: Arrival and office briefing; 10 Jul: Strategy session; 11 Jul: Partner meetings"></textarea>
+      <div style="font-size:11px;color:var(--color-text-secondary);margin-top:4px">
+        Format: Date: Description — separate entries with a semicolon
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notes</label>
+      <textarea class="form-textarea" id="visit-notes" rows="2"
+        placeholder="Hotel preferences, dietary requirements, documents needed, etc."></textarea>
+    </div>
+    <div style="display:flex;gap:var(--space-3)">
+      <button class="btn btn-primary" id="visit-save-btn" onclick="saveVisit()">Save visit</button>
+      <button class="btn btn-secondary" onclick="cancelVisitEdit()">Cancel</button>
+    </div>
+    <div id="visit-status-msg" style="display:none;margin-top:12px;font-size:var(--text-sm)"></div>
+  </div>
+
+  <div class="admin-card">
+    <div class="admin-card-title">Logged visits</div>
+    <div id="visits-table-container">
+      <div style="font-size:var(--text-sm);color:var(--color-text-secondary)">Loading visits…</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TEAM ROSTER ══ -->
+<div class="admin-section" id="section-roster">
+  <div class="section-title">Team roster</div>
+  <div class="section-subtitle">View and manage team members, roles, and expertise. Add members directly in the form below.</div>
+
+  <div class="admin-card">
+    <div class="admin-card-title" id="roster-form-title">Add team member</div>
+    <input type="hidden" id="roster-edit-id">
+    <div class="form-row form-row-2">
+      <div class="form-group">
+        <label class="form-label">Full name *</label>
+        <input class="form-input" type="text" id="roster-name" placeholder="e.g. Amaka Osei">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email *</label>
+        <input class="form-input" type="email" id="roster-email" placeholder="name@bopinc.org">
+      </div>
+    </div>
+    <div class="form-row form-row-3">
+      <div class="form-group">
+        <label class="form-label">Role *</label>
+        <select class="form-select" id="roster-role">
+          <option value="team_member">Team member</option>
+          <option value="partnerships_lead">Partnerships lead</option>
+          <option value="country_director">Country director</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Status</label>
+        <select class="form-select" id="roster-status">
+          <option value="available">Available</option>
+          <option value="busy">Busy</option>
+          <option value="leave">On leave</option>
+          <option value="offline">Offline</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Avatar colour (0–7)</label>
+        <input class="form-input" type="number" id="roster-color" min="0" max="7" placeholder="0">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Expertise / sectors</label>
+      <input class="form-input" type="text" id="roster-expertise"
+        placeholder="energy, agriculture, health (comma-separated)">
+    </div>
+    <div style="display:flex;gap:var(--space-3)">
+      <button class="btn btn-primary" id="roster-save-btn" onclick="saveMember()">Save member</button>
+      <button class="btn btn-secondary" onclick="cancelRosterEdit()">Cancel</button>
+    </div>
+    <div id="roster-status-msg" style="display:none;margin-top:12px;font-size:var(--text-sm)"></div>
+  </div>
+
+  <div class="admin-card">
+    <div class="admin-card-title">Team members</div>
+    <div id="roster-table-container">
+      <div style="font-size:var(--text-sm);color:var(--color-text-secondary)">Loading roster…</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CHANGE REQUESTS ══ -->
+<div class="admin-section" id="section-changes">
+  <div class="section-title">Change requests</div>
+  <div class="section-subtitle">Review and action correction requests submitted by team members.</div>
+  <div id="cr-container">
+    <div style="font-size:var(--text-sm);color:var(--color-text-secondary)">Loading requests…</div>
+  </div>
+</div>
+
+<!-- ══ SYNC CONTROLS ══ -->
+<div class="admin-section" id="section-sync">
+  <div class="section-title">Sync controls</div>
+  <div class="section-subtitle">Manually trigger data syncs and monitor connection status.</div>
+
+  <div class="admin-card">
+    <div class="sync-status">
+      <div class="sync-dot"></div>
+      <span>Last sync: <span id="last-sync-display">Checking…</span></span>
+    </div>
+    <div style="display:flex;gap:var(--space-3);flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="triggerSync('all')">Run all syncs now</button>
+      <button class="btn btn-secondary" onclick="triggerSync('calendar')">Calendar only</button>
+      <button class="btn btn-secondary" onclick="triggerSync('slack')">Slack only</button>
+      <button class="btn btn-secondary" onclick="invalidateCache()">Clear cache</button>
+    </div>
+    <div id="sync-log" style="margin-top:var(--space-4);font-family:var(--font-mono);
+      font-size:11px;color:var(--color-text-secondary);line-height:1.8"></div>
+  </div>
+
+  <div class="admin-card">
+    <div class="admin-card-title">Connection status</div>
+    <div id="connection-status">Checking connections…</div>
+  </div>
+
+  <div class="admin-card">
+    <div class="admin-card-title">Admin action log</div>
+    <div style="font-size:var(--text-xs);color:var(--color-text-secondary);margin-bottom:10px">
+      Last 20 admin actions — stored locally in this browser.
+    </div>
+    <div id="audit-log-container">
+      <div style="font-size:var(--text-sm);color:var(--color-text-secondary)">No actions logged yet.</div>
+    </div>
+    <button class="btn btn-secondary btn-sm" style="margin-top:10px"
+      onclick="clearAuditLog()">Clear log</button>
+  </div>
+</div>
+
+<!-- ══ SETTINGS ══ -->
+<div class="admin-section" id="section-settings">
+  <div class="section-title">Settings</div>
+  <div class="section-subtitle">Admin panel configuration and security settings.</div>
+
+  <div class="admin-card">
+    <div class="admin-card-title">Change admin password</div>
+    <div style="font-size:var(--text-sm);color:var(--color-text-secondary);margin-bottom:var(--space-4)">
+      The admin password controls access to this panel. Choose something strong that only
+      the country director knows. The new password takes effect immediately in this browser.
+    </div>
+    <div class="form-row form-row-2">
+      <div class="form-group">
+        <label class="form-label">Current password *</label>
+        <input class="form-input" type="password" id="pw-current" placeholder="Enter current password">
+      </div>
+      <div class="form-group">
+        <label class="form-label">New password *</label>
+        <input class="form-input" type="password" id="pw-new" placeholder="At least 12 characters">
+      </div>
+    </div>
+    <div class="form-group" style="max-width:300px">
+      <label class="form-label">Confirm new password *</label>
+      <input class="form-input" type="password" id="pw-confirm" placeholder="Repeat new password">
+    </div>
+    <button class="btn btn-primary" onclick="changePassword()">Update password</button>
+    <div id="pw-status-msg" style="display:none;margin-top:12px;font-size:var(--text-sm)"></div>
+  </div>
+
+  <div class="admin-card">
+    <div class="admin-card-title">Dashboard information</div>
+    <div style="display:grid;gap:8px;font-size:var(--text-sm)">
+      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid var(--color-border)">
+        <span style="color:var(--color-text-secondary)">Sheets configured</span>
+        <span id="info-sheets" style="font-weight:500">Checking…</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid var(--color-border)">
+        <span style="color:var(--color-text-secondary)">Apps Script URL</span>
+        <span id="info-appsscript" style="font-weight:500">Checking…</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid var(--color-border)">
+        <span style="color:var(--color-text-secondary)">Pending change requests</span>
+        <span id="info-pending" style="font-weight:500">—</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0">
+        <span style="color:var(--color-text-secondary)">Local projects cached</span>
+        <span id="info-projects" style="font-weight:500">—</span>
       </div>
     </div>
   </div>
-
-  <!-- VISITS SECTION -->
-  <div class="admin-section" id="section-visits">
-    <div class="section-title">Visits</div>
-    <div class="section-subtitle">Log incoming visits from global team and cross-country colleagues.</div>
-
-    <div class="admin-card">
-      <div class="admin-card-title">Add new visit</div>
-      <div class="form-group">
-        <label class="form-label">Visitors *</label>
-        <input class="form-input" type="text" id="visit-visitors"
-          placeholder="Name|Role|Country, Name|Role|Country">
-        <div style="font-size:11px;color:var(--color-text-secondary);margin-top:4px">
-          Format: Name|Role|Country — separate multiple visitors with a comma
-        </div>
-      </div>
-      <div class="form-row form-row-2">
-        <div class="form-group">
-          <label class="form-label">Arrival date *</label>
-          <input class="form-input" type="date" id="visit-arrival">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Departure date *</label>
-          <input class="form-input" type="date" id="visit-departure">
-        </div>
-      </div>
-      <div class="form-row form-row-2">
-        <div class="form-group">
-          <label class="form-label">Purpose *</label>
-          <input class="form-input" type="text" id="visit-purpose"
-            placeholder="e.g. Country strategy review and partner meetings">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Assigned country contact</label>
-          <input class="form-input" type="text" id="visit-contact" placeholder="Team member name">
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">In-country schedule</label>
-        <textarea class="form-textarea" id="visit-schedule" rows="4"
-          placeholder="9 Jul: Arrival and office briefing; 10 Jul: Strategy session; 11 Jul: Partner meetings"></textarea>
-        <div style="font-size:11px;color:var(--color-text-secondary);margin-top:4px">
-          Format: Date: Description — separate entries with a semicolon
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Notes</label>
-        <textarea class="form-textarea" id="visit-notes" rows="2"
-          placeholder="Hotel preferences, dietary requirements, documents needed, etc."></textarea>
-      </div>
-      <div style="display:flex;gap:var(--space-3)">
-        <button class="btn btn-primary" onclick="saveVisit()">Save visit</button>
-        <button class="btn btn-secondary" onclick="clearVisitForm()">Clear</button>
-      </div>
-      <div id="visit-status-msg" style="display:none;margin-top:12px;font-size:var(--text-sm)"></div>
-    </div>
-  </div>
-
-  <!-- TEAM ROSTER SECTION -->
-  <div class="admin-section" id="section-roster">
-    <div class="section-title">Team roster</div>
-    <div class="section-subtitle">View and manage team members. To add a new member, add a row directly to the team-roster tab in Google Sheets.</div>
-
-    <div class="admin-card">
-      <div id="roster-table-container">
-        <div style="font-size:var(--text-sm);color:var(--color-text-secondary)">
-          Loading roster from Sheets…
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- CHANGE REQUESTS SECTION -->
-  <div class="admin-section" id="section-changes">
-    <div class="section-title">Change requests</div>
-    <div class="section-subtitle">Review and action correction requests from team members.</div>
-    <div id="cr-container">
-      <div style="font-size:var(--text-sm);color:var(--color-text-secondary)">
-        Loading requests from Sheets…
-      </div>
-    </div>
-  </div>
-
-  <!-- SYNC CONTROLS SECTION -->
-  <div class="admin-section" id="section-sync">
-    <div class="section-title">Sync controls</div>
-    <div class="section-subtitle">Manually trigger data syncs and monitor sync status.</div>
-
-    <div class="admin-card">
-      <div class="sync-status">
-        <div class="sync-dot"></div>
-        <span>Last sync: <span id="last-sync-display">Checking…</span></span>
-      </div>
-      <div style="display:flex;gap:var(--space-3);flex-wrap:wrap">
-        <button class="btn btn-primary" onclick="triggerSync('all')">Run all syncs now</button>
-        <button class="btn btn-secondary" onclick="triggerSync('calendar')">Calendar only</button>
-        <button class="btn btn-secondary" onclick="triggerSync('slack')">Slack only</button>
-        <button class="btn btn-secondary" onclick="invalidateCache()">Clear cache</button>
-      </div>
-      <div id="sync-log" style="margin-top:var(--space-4);font-family:var(--font-mono);
-        font-size:11px;color:var(--color-text-secondary);line-height:1.8">
-      </div>
-    </div>
-
-    <div class="admin-card">
-      <div class="admin-card-title">Connection status</div>
-      <div id="connection-status">Checking connections…</div>
-    </div>
-  </div>
+</div>
 
 </div><!-- end #app -->
 
@@ -320,16 +412,20 @@ if (sessionStorage.getItem('bopinc_admin_auth') !== 'true') {
   window.location.href = 'index.html';
 }
 
-/* ── Navigation ── */
+/* ════════════════════════════════════════
+   NAVIGATION
+════════════════════════════════════════ */
 function showSection(name) {
   document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.admin-nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('section-' + name).classList.add('active');
-  event.target.classList.add('active');
-  if (name === 'changes') loadChangeRequests();
-  if (name === 'roster')  loadRoster();
+  document.getElementById('nav-' + name).classList.add('active');
+  if (name === 'changes')  loadChangeRequests();
+  if (name === 'roster')   loadRoster();
   if (name === 'projects') loadProjectsTable();
-  if (name === 'sync')    checkConnections();
+  if (name === 'visits')   loadVisitsTable();
+  if (name === 'sync')     checkConnections();
+  if (name === 'settings') loadSettingsInfo();
 }
 
 function adminLogout() {
@@ -337,7 +433,9 @@ function adminLogout() {
   window.location.href = 'index.html';
 }
 
-/* ── Status message helper ── */
+/* ════════════════════════════════════════
+   HELPERS
+════════════════════════════════════════ */
 function showMsg(elId, text, type = 'success') {
   const el = document.getElementById(elId);
   if (!el) return;
@@ -347,30 +445,90 @@ function showMsg(elId, text, type = 'success') {
   setTimeout(() => { el.style.display = 'none'; }, 4000);
 }
 
-/* ── Generate row ID ── */
 function genId(prefix) {
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
+}
+
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
 }
 
 /* ════════════════════════════════════════
-   PROJECTS
+   AUDIT LOG
 ════════════════════════════════════════ */
-async function saveProject() {
-  const name   = document.getElementById('proj-name').value.trim();
-  const start  = document.getElementById('proj-start').value;
-  const end    = document.getElementById('proj-end').value;
+function auditLog(message) {
+  const log  = JSON.parse(localStorage.getItem('bopinc_audit_log') || '[]');
+  const entry = {
+    ts:  new Date().toISOString(),
+    msg: message,
+  };
+  log.unshift(entry);
+  localStorage.setItem('bopinc_audit_log', JSON.stringify(log.slice(0, 20)));
+}
 
+function loadAuditLog() {
+  const container = document.getElementById('audit-log-container');
+  const log = JSON.parse(localStorage.getItem('bopinc_audit_log') || '[]');
+  if (log.length === 0) {
+    container.innerHTML = '<div style="font-size:var(--text-sm);color:var(--color-text-secondary)">No actions logged yet.</div>';
+    return;
+  }
+  container.innerHTML = log.map(e => `
+    <div class="audit-entry">
+      <span class="audit-ts">${new Date(e.ts).toLocaleString('en-GB',{
+        day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</span>
+      <span class="audit-msg">${e.msg}</span>
+    </div>`).join('');
+}
+
+function clearAuditLog() {
+  if (!confirm('Clear the action log? This cannot be undone.')) return;
+  localStorage.removeItem('bopinc_audit_log');
+  loadAuditLog();
+}
+
+/* ════════════════════════════════════════
+   PROJECTS — add / edit / delete
+════════════════════════════════════════ */
+let editingProjectId = null;
+
+function saveProject() {
+  const name  = document.getElementById('proj-name').value.trim();
+  const start = document.getElementById('proj-start').value;
+  const end   = document.getElementById('proj-end').value;
   if (!name || !start || !end) {
     showMsg('proj-status-msg', 'Name, start date and end date are required.', 'error');
     return;
   }
+  const queue = JSON.parse(localStorage.getItem('bopinc_local_projects') || '[]');
+  if (editingProjectId) {
+    /* Edit existing */
+    const idx = queue.findIndex(p => p.id === editingProjectId);
+    if (idx !== -1) {
+      queue[idx] = { ...queue[idx], ...buildProjectRow() };
+      localStorage.setItem('bopinc_local_projects', JSON.stringify(queue));
+      showMsg('proj-status-msg', `Project "${name}" updated.`);
+      auditLog(`Updated project: ${name}`);
+    }
+  } else {
+    /* New */
+    const row = { id: genId('proj'), ...buildProjectRow() };
+    queue.push(row);
+    localStorage.setItem('bopinc_local_projects', JSON.stringify(queue));
+    showMsg('proj-status-msg', `Project "${name}" saved.`);
+    auditLog(`Added project: ${name}`);
+  }
+  cancelProjectEdit();
+  loadProjectsTable();
+}
 
-  const row = {
-    id:             genId('proj'),
-    name,
+function buildProjectRow() {
+  return {
+    name:           document.getElementById('proj-name').value.trim(),
     status:         document.getElementById('proj-status').value,
-    startDate:      start,
-    endDate:        end,
+    startDate:      document.getElementById('proj-start').value,
+    endDate:        document.getElementById('proj-end').value,
     sector:         document.getElementById('proj-sector').value,
     lead:           document.getElementById('proj-lead').value.trim(),
     teamMembers:    document.getElementById('proj-team').value.trim(),
@@ -379,234 +537,403 @@ async function saveProject() {
     projectCode:    document.getElementById('proj-code').value.trim(),
     accountManager: document.getElementById('proj-am').value.trim(),
   };
-
-  /* Save to localStorage queue until Apps Script is configured */
-  const queue = JSON.parse(localStorage.getItem('bopinc_local_projects') || '[]');
-  queue.push(row);
-  localStorage.setItem('bopinc_local_projects', JSON.stringify(queue));
-
-  showMsg('proj-status-msg', `Project "${name}" saved. It will appear on the dashboard after the next sync.`);
-  clearProjectForm();
 }
 
-function clearProjectForm() {
-  ['proj-name','proj-code','proj-lead','proj-am','proj-team','proj-desc',
-   'proj-health','proj-start','proj-end'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
-  });
+function editProject(id) {
+  const queue = JSON.parse(localStorage.getItem('bopinc_local_projects') || '[]');
+  const p = queue.find(p => p.id === id);
+  if (!p) return;
+  editingProjectId = id;
+  document.getElementById('proj-name').value    = p.name || '';
+  document.getElementById('proj-code').value    = p.projectCode || '';
+  document.getElementById('proj-status').value  = p.status || 'active';
+  document.getElementById('proj-sector').value  = p.sector || '';
+  document.getElementById('proj-health').value  = p.health || '';
+  document.getElementById('proj-start').value   = p.startDate || '';
+  document.getElementById('proj-end').value     = p.endDate || '';
+  document.getElementById('proj-lead').value    = p.lead || '';
+  document.getElementById('proj-am').value      = p.accountManager || '';
+  document.getElementById('proj-team').value    = p.teamMembers || '';
+  document.getElementById('proj-desc').value    = p.description || '';
+  document.getElementById('proj-form-title').textContent = 'Edit project';
+  document.getElementById('proj-save-btn').textContent   = 'Update project';
+  document.getElementById('section-projects').scrollIntoView({ behavior: 'smooth' });
+}
+
+function deleteProject(id, name) {
+  if (!confirm(`Delete project "${name}"? This cannot be undone.`)) return;
+  const queue = JSON.parse(localStorage.getItem('bopinc_local_projects') || '[]');
+  const filtered = queue.filter(p => p.id !== id);
+  localStorage.setItem('bopinc_local_projects', JSON.stringify(filtered));
+  auditLog(`Deleted project: ${name}`);
+  loadProjectsTable();
+}
+
+function cancelProjectEdit() {
+  editingProjectId = null;
+  ['proj-name','proj-code','proj-lead','proj-am','proj-team','proj-desc','proj-health','proj-start','proj-end']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   document.getElementById('proj-status').value = 'active';
   document.getElementById('proj-sector').value = '';
+  document.getElementById('proj-form-title').textContent = 'Add new project';
+  document.getElementById('proj-save-btn').textContent   = 'Save project';
 }
 
-async function loadProjectsTable() {
+function loadProjectsTable() {
   const container = document.getElementById('projects-table-container');
-  const local = JSON.parse(localStorage.getItem('bopinc_local_projects') || '[]');
-
-  if (local.length === 0) {
+  const queue = JSON.parse(localStorage.getItem('bopinc_local_projects') || '[]');
+  if (queue.length === 0) {
     container.innerHTML = `<div style="font-size:var(--text-sm);color:var(--color-text-secondary)">
-      No projects added yet. Add the first project above, or add rows directly to the
-      <strong>projects</strong> tab in Google Sheets.</div>`;
+      No projects added yet. Use the form above to add the first project.</div>`;
     return;
   }
+  const statusColour = s => ({
+    active:'badge-green', 'at-risk':'badge-amber', delayed:'badge-amber',
+    blocked:'badge-red', completed:'badge-slate', pipeline:'badge-slate',
+  }[s] || 'badge-slate');
 
   container.innerHTML = `
     <table class="data-table">
       <thead><tr>
-        <th>Name</th><th>Code</th><th>Status</th><th>Sector</th><th>End date</th><th>Lead</th>
+        <th>Name</th><th>Code</th><th>Status</th><th>Sector</th><th>End date</th><th>Lead</th><th>Actions</th>
       </tr></thead>
       <tbody>
-        ${local.map(p => `<tr>
-          <td data-label="Name">${p.name}</td>
+        ${queue.map(p => `<tr>
+          <td data-label="Name"><strong>${p.name}</strong></td>
           <td data-label="Code">${p.projectCode || '—'}</td>
-          <td data-label="Status">${p.status}</td>
+          <td data-label="Status"><span class="badge ${statusColour(p.status)}">${p.status}</span></td>
           <td data-label="Sector">${p.sector || '—'}</td>
-          <td data-label="End date">${p.endDate}</td>
+          <td data-label="End date">${fmtDate(p.endDate)}</td>
           <td data-label="Lead">${p.lead || '—'}</td>
+          <td data-label="Actions">
+            <div class="tbl-actions">
+              <button class="btn btn-secondary btn-sm" onclick="editProject('${p.id}')">Edit</button>
+              <button class="btn btn-sm" style="color:var(--color-danger);border-color:var(--color-danger)"
+                onclick="deleteProject('${p.id}', '${p.name.replace(/'/g,"\\'")}')">Delete</button>
+            </div>
+          </td>
         </tr>`).join('')}
       </tbody>
     </table>`;
 }
 
 /* ════════════════════════════════════════
-   VISITS
+   VISITS — add / edit / delete
 ════════════════════════════════════════ */
-async function saveVisit() {
+let editingVisitId = null;
+
+function saveVisit() {
   const visitors  = document.getElementById('visit-visitors').value.trim();
   const arrival   = document.getElementById('visit-arrival').value;
   const departure = document.getElementById('visit-departure').value;
   const purpose   = document.getElementById('visit-purpose').value.trim();
-
   if (!visitors || !arrival || !departure || !purpose) {
     showMsg('visit-status-msg', 'Visitors, dates, and purpose are required.', 'error');
     return;
   }
-
+  const queue = JSON.parse(localStorage.getItem('bopinc_local_visits') || '[]');
   const row = {
-    id:              genId('visit'),
     visitorNames:    visitors,
-    arrival,
-    departure,
-    purpose,
+    arrival, departure, purpose,
     assignedContact: document.getElementById('visit-contact').value.trim(),
     appointments:    document.getElementById('visit-schedule').value.trim(),
     notes:           document.getElementById('visit-notes').value.trim(),
     status:          'upcoming',
   };
-
-  const queue = JSON.parse(localStorage.getItem('bopinc_local_visits') || '[]');
-  queue.push(row);
-  localStorage.setItem('bopinc_local_visits', JSON.stringify(queue));
-
-  showMsg('visit-status-msg', 'Visit saved. It will appear on the dashboard after the next sync.');
-  clearVisitForm();
+  if (editingVisitId) {
+    const idx = queue.findIndex(v => v.id === editingVisitId);
+    if (idx !== -1) {
+      queue[idx] = { ...queue[idx], ...row };
+      localStorage.setItem('bopinc_local_visits', JSON.stringify(queue));
+      showMsg('visit-status-msg', 'Visit updated.');
+      auditLog(`Updated visit: ${visitors.split('|')[0]} arriving ${fmtDate(arrival)}`);
+    }
+  } else {
+    queue.push({ id: genId('visit'), ...row });
+    localStorage.setItem('bopinc_local_visits', JSON.stringify(queue));
+    showMsg('visit-status-msg', 'Visit saved.');
+    auditLog(`Added visit: ${visitors.split('|')[0]} arriving ${fmtDate(arrival)}`);
+  }
+  cancelVisitEdit();
+  loadVisitsTable();
 }
 
-function clearVisitForm() {
-  ['visit-visitors','visit-arrival','visit-departure','visit-purpose',
-   'visit-contact','visit-schedule','visit-notes'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
-  });
+function editVisit(id) {
+  const queue = JSON.parse(localStorage.getItem('bopinc_local_visits') || '[]');
+  const v = queue.find(v => v.id === id);
+  if (!v) return;
+  editingVisitId = id;
+  document.getElementById('visit-visitors').value  = v.visitorNames || '';
+  document.getElementById('visit-arrival').value   = v.arrival || '';
+  document.getElementById('visit-departure').value = v.departure || '';
+  document.getElementById('visit-purpose').value   = v.purpose || '';
+  document.getElementById('visit-contact').value   = v.assignedContact || '';
+  document.getElementById('visit-schedule').value  = v.appointments || '';
+  document.getElementById('visit-notes').value     = v.notes || '';
+  document.getElementById('visit-form-title').textContent = 'Edit visit';
+  document.getElementById('visit-save-btn').textContent   = 'Update visit';
+  document.getElementById('section-visits').scrollIntoView({ behavior: 'smooth' });
+}
+
+function deleteVisit(id, label) {
+  if (!confirm(`Delete this visit (${label})? This cannot be undone.`)) return;
+  const queue = JSON.parse(localStorage.getItem('bopinc_local_visits') || '[]');
+  localStorage.setItem('bopinc_local_visits', JSON.stringify(queue.filter(v => v.id !== id)));
+  auditLog(`Deleted visit: ${label}`);
+  loadVisitsTable();
+}
+
+function cancelVisitEdit() {
+  editingVisitId = null;
+  ['visit-visitors','visit-arrival','visit-departure','visit-purpose','visit-contact','visit-schedule','visit-notes']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('visit-form-title').textContent = 'Add new visit';
+  document.getElementById('visit-save-btn').textContent   = 'Save visit';
+}
+
+function loadVisitsTable() {
+  const container = document.getElementById('visits-table-container');
+  const queue = JSON.parse(localStorage.getItem('bopinc_local_visits') || '[]');
+  if (queue.length === 0) {
+    container.innerHTML = `<div style="font-size:var(--text-sm);color:var(--color-text-secondary)">
+      No visits logged yet. Use the form above to log the first visit.</div>`;
+    return;
+  }
+  container.innerHTML = `
+    <table class="data-table">
+      <thead><tr>
+        <th>Visitors</th><th>Arrival</th><th>Departure</th><th>Purpose</th><th>Contact</th><th>Actions</th>
+      </tr></thead>
+      <tbody>
+        ${queue.map(v => {
+          const firstName = (v.visitorNames || '').split('|')[0].split(',')[0].trim();
+          const label = `${firstName} ${fmtDate(v.arrival)}`;
+          return `<tr>
+            <td data-label="Visitors"><strong>${firstName}</strong></td>
+            <td data-label="Arrival">${fmtDate(v.arrival)}</td>
+            <td data-label="Departure">${fmtDate(v.departure)}</td>
+            <td data-label="Purpose">${v.purpose}</td>
+            <td data-label="Contact">${v.assignedContact || '—'}</td>
+            <td data-label="Actions">
+              <div class="tbl-actions">
+                <button class="btn btn-secondary btn-sm" onclick="editVisit('${v.id}')">Edit</button>
+                <button class="btn btn-sm" style="color:var(--color-danger);border-color:var(--color-danger)"
+                  onclick="deleteVisit('${v.id}', '${label.replace(/'/g,"\\'")}')">Delete</button>
+              </div>
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
 }
 
 /* ════════════════════════════════════════
-   CHANGE REQUESTS
+   TEAM ROSTER — add / edit / delete
+════════════════════════════════════════ */
+let editingRosterId = null;
+
+function saveMember() {
+  const name  = document.getElementById('roster-name').value.trim();
+  const email = document.getElementById('roster-email').value.trim();
+  const role  = document.getElementById('roster-role').value;
+  if (!name || !email) {
+    showMsg('roster-status-msg', 'Name and email are required.', 'error');
+    return;
+  }
+  const roster = JSON.parse(localStorage.getItem('bopinc_local_roster') || '[]');
+  const initials = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+  const row = {
+    name, email, role, initials,
+    status:    document.getElementById('roster-status').value,
+    expertise: document.getElementById('roster-expertise').value.trim(),
+    avatarColor: parseInt(document.getElementById('roster-color').value || '0', 10),
+  };
+  if (editingRosterId) {
+    const idx = roster.findIndex(m => m.id === editingRosterId);
+    if (idx !== -1) {
+      roster[idx] = { ...roster[idx], ...row };
+      localStorage.setItem('bopinc_local_roster', JSON.stringify(roster));
+      showMsg('roster-status-msg', `${name} updated.`);
+      auditLog(`Updated team member: ${name} (${ROLE_LABELS[role] || role})`);
+    }
+  } else {
+    roster.push({ id: genId('user'), ...row });
+    localStorage.setItem('bopinc_local_roster', JSON.stringify(roster));
+    showMsg('roster-status-msg', `${name} added to roster.`);
+    auditLog(`Added team member: ${name} (${ROLE_LABELS[role] || role})`);
+  }
+  cancelRosterEdit();
+  loadRoster();
+}
+
+function editMember(id) {
+  const roster = JSON.parse(localStorage.getItem('bopinc_local_roster') || '[]');
+  const m = roster.find(m => m.id === id);
+  if (!m) return;
+  editingRosterId = id;
+  document.getElementById('roster-name').value      = m.name || '';
+  document.getElementById('roster-email').value     = m.email || '';
+  document.getElementById('roster-role').value      = m.role || 'team_member';
+  document.getElementById('roster-status').value    = m.status || 'available';
+  document.getElementById('roster-expertise').value = m.expertise || '';
+  document.getElementById('roster-color').value     = m.avatarColor || 0;
+  document.getElementById('roster-form-title').textContent = 'Edit team member';
+  document.getElementById('roster-save-btn').textContent   = 'Update member';
+  document.getElementById('section-roster').scrollIntoView({ behavior: 'smooth' });
+}
+
+function deleteMember(id, name) {
+  if (!confirm(`Remove ${name} from the roster? This cannot be undone.`)) return;
+  const roster = JSON.parse(localStorage.getItem('bopinc_local_roster') || '[]');
+  localStorage.setItem('bopinc_local_roster', JSON.stringify(roster.filter(m => m.id !== id)));
+  auditLog(`Removed team member: ${name}`);
+  loadRoster();
+}
+
+function cancelRosterEdit() {
+  editingRosterId = null;
+  ['roster-name','roster-email','roster-expertise','roster-color']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('roster-role').value   = 'team_member';
+  document.getElementById('roster-status').value = 'available';
+  document.getElementById('roster-form-title').textContent = 'Add team member';
+  document.getElementById('roster-save-btn').textContent   = 'Save member';
+}
+
+function loadRoster() {
+  const container = document.getElementById('roster-table-container');
+  /* Use local roster if present, else fall back to demo */
+  const local = JSON.parse(localStorage.getItem('bopinc_local_roster') || '[]');
+  const DEMO  = [
+    { id:'u1', name:'Amaka Osei',    role:'country_director',  expertise:'strategy,partnerships', status:'available', avatarColor:0 },
+    { id:'u2', name:'Chidi Nwosu',   role:'partnerships_lead', expertise:'energy,agriculture',    status:'available', avatarColor:1 },
+    { id:'u3', name:'Fatima Aliyu',  role:'team_member',       expertise:'health,wash',           status:'available', avatarColor:2 },
+    { id:'u4', name:'Emeka Okonkwo', role:'team_member',       expertise:'finance,livelihoods',   status:'leave',     avatarColor:3 },
+    { id:'u5', name:'Ngozi Adeyemi', role:'team_member',       expertise:'education,gender',      status:'available', avatarColor:4 },
+    { id:'u6', name:'Bola Tunde',    role:'team_member',       expertise:'monitoring,data',       status:'busy',      avatarColor:5 },
+  ];
+  const members = local.length > 0 ? local : DEMO;
+  const statusBadge = s => ({
+    available: 'badge-green', busy: 'badge-amber', leave: 'badge-red', offline: 'badge-slate',
+  }[s] || 'badge-slate');
+
+  container.innerHTML = `
+    ${local.length === 0 ? `<div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:10px">
+      Showing demo data. Add members using the form above to start building the live roster.</div>` : ''}
+    <table class="data-table">
+      <thead><tr>
+        <th>Name</th><th>Role</th><th>Expertise</th><th>Status</th><th>Actions</th>
+      </tr></thead>
+      <tbody>
+        ${members.map(m => `<tr>
+          <td data-label="Name"><strong>${m.name}</strong></td>
+          <td data-label="Role">${ROLE_LABELS[m.role] || m.role}</td>
+          <td data-label="Expertise">${m.expertise || '—'}</td>
+          <td data-label="Status"><span class="badge ${statusBadge(m.status)}">${m.status}</span></td>
+          <td data-label="Actions">
+            <div class="tbl-actions">
+              <button class="btn btn-secondary btn-sm" onclick="editMember('${m.id}')">Edit</button>
+              <button class="btn btn-sm" style="color:var(--color-danger);border-color:var(--color-danger)"
+                onclick="deleteMember('${m.id}', '${m.name.replace(/'/g,"\\'")}')">Remove</button>
+            </div>
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+/* ════════════════════════════════════════
+   CHANGE REQUESTS — review and apply
 ════════════════════════════════════════ */
 async function loadChangeRequests() {
   const container = document.getElementById('cr-container');
-  const queue     = JSON.parse(localStorage.getItem('bopinc_cr_queue') || '[]');
-  const pending   = queue.filter(r => r.status === 'pending');
-  const reviewed  = queue.filter(r => r.status !== 'pending').slice(-5).reverse();
+  const queue   = JSON.parse(localStorage.getItem('bopinc_cr_queue') || '[]');
+  const pending = queue.filter(r => r.status === 'pending');
+  const reviewed= queue.filter(r => r.status !== 'pending').slice(-5).reverse();
 
   const badge = document.getElementById('cr-badge');
-  if (badge) {
-    badge.textContent   = pending.length;
-    badge.style.display = pending.length > 0 ? 'inline-flex' : 'none';
-  }
+  if (badge) { badge.textContent = pending.length; badge.style.display = pending.length > 0 ? 'inline-flex' : 'none'; }
 
   if (pending.length === 0 && reviewed.length === 0) {
-    container.innerHTML = `
-      <div class="admin-card" style="text-align:center;padding:var(--space-8)">
-        <div style="font-size:40px;margin-bottom:var(--space-3)">&#10003;</div>
-        <div style="font-size:var(--text-base);font-weight:500;margin-bottom:4px">All clear</div>
-        <div style="font-size:var(--text-sm);color:var(--color-text-secondary)">
-          No pending requests. Team member corrections will appear here.
-        </div>
-      </div>`;
+    container.innerHTML = `<div class="admin-card" style="text-align:center;padding:var(--space-8)">
+      <div style="font-size:40px;margin-bottom:var(--space-3)">&#10003;</div>
+      <div style="font-size:var(--text-base);font-weight:500;margin-bottom:4px">All clear</div>
+      <div style="font-size:var(--text-sm);color:var(--color-text-secondary)">
+        No pending requests. Team member corrections will appear here.</div>
+    </div>`;
     return;
   }
 
-  const fmtDate = d => d ? new Date(d).toLocaleString('en-GB',{
-    day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',
-  }) : '—';
+  const fmt = d => d ? new Date(d).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+  const ICONS = { role:'&#127917;',project:'&#128193;',leave:'&#128197;',expertise:'&#128302;',availability:'&#128994;',other:'&#9999;&#65039;' };
 
-  const ICONS = { role:'&#127917;',project:'&#128193;',leave:'&#128197;',
-    expertise:'&#128302;',availability:'&#128994;',other:'&#9999;&#65039;' };
-
-  const renderCard = r => {
-    const icon = ICONS[r.field] || '&#9999;&#65039;';
-    return `
-      <div id="cr-${r.id}" class="admin-card"
-        style="border-left:4px solid var(--amber-400);margin-bottom:16px;
-          padding:var(--space-4);transition:opacity .3s">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;
-          margin-bottom:var(--space-3)">
-          <div style="display:flex;align-items:center;gap:10px">
-            <div style="width:40px;height:40px;border-radius:50%;background:var(--amber-50);
-              display:flex;align-items:center;justify-content:center;
-              font-size:20px;flex-shrink:0">${icon}</div>
-            <div>
-              <div style="font-size:var(--text-base);font-weight:600">${r.submittedBy}</div>
-              <div style="font-size:var(--text-xs);color:var(--color-text-secondary)">${fmtDate(r.submittedAt)}</div>
-            </div>
-          </div>
-          <span class="badge badge-amber">Needs review</span>
-        </div>
-        <div style="background:var(--color-surface-2);border-radius:var(--radius-md);
-          padding:8px 12px;margin-bottom:var(--space-3)">
-          <div style="font-size:10px;font-weight:600;color:var(--color-text-secondary);
-            text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Correction type</div>
-          <div style="font-size:var(--text-sm);font-weight:500">${r.fieldLabel || r.field}</div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 24px 1fr;gap:6px;
-          align-items:center;margin-bottom:var(--space-3)">
-          <div style="padding:10px 12px;background:var(--color-danger-bg);border-radius:var(--radius-md)">
-            <div style="font-size:10px;font-weight:600;color:var(--color-danger);
-              text-transform:uppercase;margin-bottom:3px">Currently shows</div>
-            <div style="font-size:var(--text-sm);font-weight:500">${r.currentValue || '—'}</div>
-          </div>
-          <div style="text-align:center;font-size:14px;color:var(--color-text-tertiary)">&rarr;</div>
-          <div style="padding:10px 12px;background:var(--color-success-bg);border-radius:var(--radius-md)">
-            <div style="font-size:10px;font-weight:600;color:var(--color-success);
-              text-transform:uppercase;margin-bottom:3px">Should be</div>
-            <div style="font-size:var(--text-sm);font-weight:500">${r.correctValue}</div>
+  const renderCard = r => `
+    <div id="cr-${r.id}" class="admin-card" style="border-left:4px solid var(--amber-400);margin-bottom:16px;padding:var(--space-4);transition:opacity .3s">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:var(--space-3)">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:40px;height:40px;border-radius:50%;background:var(--amber-50);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">${ICONS[r.field]||'&#9999;&#65039;'}</div>
+          <div>
+            <div style="font-size:var(--text-base);font-weight:600">${r.submittedBy}</div>
+            <div style="font-size:var(--text-xs);color:var(--color-text-secondary)">${fmt(r.submittedAt)}</div>
           </div>
         </div>
-        ${r.note ? `<div style="padding:8px 12px;background:var(--amber-50);margin-bottom:var(--space-3);
-          border-radius:var(--radius-md);font-size:var(--text-xs);color:var(--amber-900);
-          border-left:2px solid var(--amber-400)">
-          <strong>${r.submittedBy.split(' ')[0]} says:</strong> ${r.note}</div>` : ''}
-        <div style="margin-bottom:var(--space-3)">
-          <label style="font-size:11px;font-weight:500;color:var(--color-text-secondary);
-            display:block;margin-bottom:6px">
-            Reply to ${r.submittedBy.split(' ')[0]} (optional — they will see this)
-          </label>
-          <input type="text" id="cr-note-${r.id}"
-            placeholder="e.g. Updated. Or: Cannot verify, please contact HR."
-            style="width:100%;padding:8px 12px;border:1px solid var(--color-border);
-              border-radius:var(--radius-md);font-size:13px;font-family:inherit;
-              background:var(--color-surface);color:var(--color-text-primary)">
+        <span class="badge badge-amber">Needs review</span>
+      </div>
+      <div style="background:var(--color-surface-2);border-radius:var(--radius-md);padding:8px 12px;margin-bottom:var(--space-3)">
+        <div style="font-size:10px;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Correction type</div>
+        <div style="font-size:var(--text-sm);font-weight:500">${r.fieldLabel || r.field}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 24px 1fr;gap:6px;align-items:center;margin-bottom:var(--space-3)">
+        <div style="padding:10px 12px;background:var(--color-danger-bg);border-radius:var(--radius-md)">
+          <div style="font-size:10px;font-weight:600;color:var(--color-danger);text-transform:uppercase;margin-bottom:3px">Currently shows</div>
+          <div style="font-size:var(--text-sm);font-weight:500">${r.currentValue || '—'}</div>
         </div>
-        <div style="display:flex;gap:8px">
-          <button onclick="reviewCR('${r.id}','approved')"
-            class="btn btn-primary btn-sm" style="flex:1">&#10003; Approve and action</button>
-          <button onclick="reviewCR('${r.id}','rejected')"
-            class="btn btn-secondary btn-sm">&#10007; Reject</button>
+        <div style="text-align:center;font-size:14px;color:var(--color-text-tertiary)">&rarr;</div>
+        <div style="padding:10px 12px;background:var(--color-success-bg);border-radius:var(--radius-md)">
+          <div style="font-size:10px;font-weight:600;color:var(--color-success);text-transform:uppercase;margin-bottom:3px">Should be</div>
+          <div style="font-size:var(--text-sm);font-weight:500">${r.correctValue}</div>
         </div>
-      </div>`;
-  };
+      </div>
+      ${r.note ? `<div style="padding:8px 12px;background:var(--amber-50);margin-bottom:var(--space-3);border-radius:var(--radius-md);font-size:var(--text-xs);color:var(--amber-900);border-left:2px solid var(--amber-400)"><strong>${r.submittedBy.split(' ')[0]} says:</strong> ${r.note}</div>` : ''}
+      <div style="margin-bottom:var(--space-3)">
+        <label style="font-size:11px;font-weight:500;color:var(--color-text-secondary);display:block;margin-bottom:6px">
+          Reply to ${r.submittedBy.split(' ')[0]} (optional)
+        </label>
+        <input type="text" id="cr-note-${r.id}"
+          placeholder="e.g. Updated. Or: Cannot verify, please contact HR."
+          style="width:100%;padding:8px 12px;border:1px solid var(--color-border);border-radius:var(--radius-md);font-size:13px;font-family:inherit;background:var(--color-surface);color:var(--color-text-primary)">
+      </div>
+      <div style="display:flex;gap:8px">
+        <button onclick="reviewCR('${r.id}','approved')" class="btn btn-primary btn-sm" style="flex:1">&#10003; Approve and action</button>
+        <button onclick="reviewCR('${r.id}','rejected')" class="btn btn-secondary btn-sm">&#10007; Reject</button>
+      </div>
+    </div>`;
 
   const pendingHtml = pending.length > 0 ? `
-    <div style="font-size:11px;font-weight:600;color:var(--color-text-secondary);
-      text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;
-      display:flex;align-items:center;gap:8px">
-      <span style="background:var(--amber-400);color:var(--amber-900);border-radius:50%;
-        width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;
-        font-size:11px;font-weight:700">${pending.length}</span>
+    <div style="font-size:11px;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;display:flex;align-items:center;gap:8px">
+      <span style="background:var(--amber-400);color:var(--amber-900);border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">${pending.length}</span>
       Awaiting your review
     </div>
     ${pending.map(renderCard).join('')}` : '';
 
   const reviewedHtml = reviewed.length > 0 ? `
-    <div style="font-size:11px;font-weight:600;color:var(--color-text-secondary);
-      text-transform:uppercase;letter-spacing:.07em;
-      margin:${pending.length ? '24px' : '0'} 0 12px">Recently reviewed</div>
+    <div style="font-size:11px;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.07em;margin:${pending.length?'24px':'0'} 0 12px">Recently reviewed</div>
     ${reviewed.map(r => `
-      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;
-        border:1px solid var(--color-border);border-radius:var(--radius-md);
-        margin-bottom:8px;opacity:.75">
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--color-border);border-radius:var(--radius-md);margin-bottom:8px;opacity:.75">
         <span style="font-size:18px">${ICONS[r.field]||'&#9999;&#65039;'}</span>
         <div style="flex:1;min-width:0">
           <div style="font-size:var(--text-sm);font-weight:500">${r.submittedBy}
-            <span style="font-weight:400;color:var(--color-text-secondary)"> — ${r.fieldLabel||r.field}</span>
-          </div>
-          <div style="font-size:var(--text-xs);color:var(--color-text-secondary)">
-            ${fmtDate(r.reviewedAt||r.submittedAt)}
-            ${r.reviewNote ? ' &middot; "' + r.reviewNote + '"' : ''}
-          </div>
+            <span style="font-weight:400;color:var(--color-text-secondary)"> — ${r.fieldLabel||r.field}</span></div>
+          <div style="font-size:var(--text-xs);color:var(--color-text-secondary)">${fmt(r.reviewedAt||r.submittedAt)}${r.reviewNote ? ` &middot; "${r.reviewNote}"` : ''}</div>
         </div>
         <span class="badge ${r.status==='approved'?'badge-green':'badge-red'}" style="flex-shrink:0">
-          ${r.status==='approved' ? '&#10003; Approved' : '&#10007; Rejected'}
-        </span>
+          ${r.status==='approved'?'&#10003; Approved':'&#10007; Rejected'}</span>
       </div>`).join('')}` : '';
 
   container.innerHTML = pendingHtml + reviewedHtml;
 }
 
-window.addEventListener('storage', e => {
-  if (e.key === 'bopinc_cr_queue') loadChangeRequests();
-});
+window.addEventListener('storage', e => { if (e.key === 'bopinc_cr_queue') loadChangeRequests(); });
 
 function reviewCR(id, decision) {
   const queue = JSON.parse(localStorage.getItem('bopinc_cr_queue') || '[]');
@@ -617,54 +944,53 @@ function reviewCR(id, decision) {
   queue[idx].status     = decision;
   queue[idx].reviewNote = note;
   queue[idx].reviewedAt = new Date().toISOString();
+
+  /* ── Apply the correction if approved ── */
+  if (decision === 'approved') {
+    applyCorrectionToData(queue[idx]);
+  }
+
   localStorage.setItem('bopinc_cr_queue', JSON.stringify(queue));
+  auditLog(`${decision === 'approved' ? 'Approved' : 'Rejected'} change request: ${queue[idx].fieldLabel || queue[idx].field} for ${queue[idx].submittedBy}`);
 
   const card = document.getElementById(`cr-${id}`);
-  if (card) {
-    card.style.opacity = '0.5';
-    card.style.pointerEvents = 'none';
-    card.querySelector('.badge').className = `badge ${decision === 'approved' ? 'badge-green' : 'badge-red'}`;
-    card.querySelector('.badge').textContent = decision === 'approved' ? 'Approved' : 'Rejected';
-  }
+  if (card) { card.style.opacity = '0.5'; card.style.pointerEvents = 'none'; }
   loadChangeRequests();
 }
 
-/* ════════════════════════════════════════
-   TEAM ROSTER
-════════════════════════════════════════ */
-async function loadRoster() {
-  const container = document.getElementById('roster-table-container');
-  const DEMO_ROSTER = [
-    { id:'u1', name:'Amaka Osei', role:'country_director', expertise:'strategy,partnerships', status:'available' },
-    { id:'u2', name:'Chidi Nwosu', role:'partnerships_lead', expertise:'energy,agriculture', status:'available' },
-    { id:'u3', name:'Fatima Aliyu', role:'team_member', expertise:'health,wash', status:'available' },
-    { id:'u4', name:'Emeka Okonkwo', role:'team_member', expertise:'finance,livelihoods', status:'leave' },
-    { id:'u5', name:'Ngozi Adeyemi', role:'team_member', expertise:'education,gender', status:'available' },
-    { id:'u6', name:'Bola Tunde', role:'team_member', expertise:'monitoring,data', status:'busy' },
-  ];
+function applyCorrectionToData(request) {
+  const { field, correctValue, userId, submittedBy } = request;
+  if (!field || !correctValue) return;
 
-  container.innerHTML = `
-    <div style="font-size:var(--text-xs);color:var(--color-text-secondary);margin-bottom:12px">
-      To add or edit team members, update the <strong>team-roster</strong> tab in Google Sheets.
-      Changes sync to the dashboard within 30 minutes.
-    </div>
-    <table class="data-table">
-      <thead><tr>
-        <th>Name</th><th>Role</th><th>Expertise</th><th>Status</th>
-      </tr></thead>
-      <tbody>
-        ${DEMO_ROSTER.map(u => `<tr>
-          <td data-label="Name"><strong>${u.name}</strong></td>
-          <td data-label="Role">${ROLE_LABELS[u.role] || u.role}</td>
-          <td data-label="Expertise">${u.expertise}</td>
-          <td data-label="Status">
-            <span class="badge ${u.status==='available'?'badge-green':u.status==='leave'?'badge-red':'badge-amber'}">
-              ${u.status}
-            </span>
-          </td>
-        </tr>`).join('')}
-      </tbody>
-    </table>`;
+  if (field === 'expertise_tag' || field === 'expertise') {
+    /* Update roster expertise */
+    const roster = JSON.parse(localStorage.getItem('bopinc_local_roster') || '[]');
+    const idx = roster.findIndex(m => m.id === userId || m.name === submittedBy);
+    if (idx !== -1) {
+      roster[idx].expertise = correctValue;
+      localStorage.setItem('bopinc_local_roster', JSON.stringify(roster));
+    }
+  }
+
+  if (field === 'availability_status' || field === 'availability') {
+    const roster = JSON.parse(localStorage.getItem('bopinc_local_roster') || '[]');
+    const idx = roster.findIndex(m => m.id === userId || m.name === submittedBy);
+    if (idx !== -1) {
+      roster[idx].status = correctValue;
+      localStorage.setItem('bopinc_local_roster', JSON.stringify(roster));
+    }
+  }
+
+  if (field === 'role_title' || field === 'role') {
+    const roster = JSON.parse(localStorage.getItem('bopinc_local_roster') || '[]');
+    const idx = roster.findIndex(m => m.id === userId || m.name === submittedBy);
+    if (idx !== -1) {
+      roster[idx].role = correctValue;
+      localStorage.setItem('bopinc_local_roster', JSON.stringify(roster));
+    }
+  }
+  /* Project, leave, and name corrections require manual action by the director
+     — those fields do not auto-apply because they affect multiple data sources */
 }
 
 /* ════════════════════════════════════════
@@ -683,6 +1009,7 @@ async function triggerSync(type) {
   await new Promise(r => setTimeout(r, 1200));
   log(`${type} sync complete.`);
   document.getElementById('last-sync-display').textContent = 'Just now';
+  auditLog(`Manual sync triggered: ${type}`);
 }
 
 function invalidateCache() {
@@ -690,38 +1017,84 @@ function invalidateCache() {
     .filter(k => k.startsWith('bopinc_sheets_'))
     .forEach(k => sessionStorage.removeItem(k));
   log('Cache cleared. Next page load will fetch fresh data from Sheets.');
+  auditLog('Session cache cleared');
 }
 
 async function checkConnections() {
   const el = document.getElementById('connection-status');
   el.innerHTML = 'Checking…';
+  const sheetsOk   = typeof SHEETS_CONFIG !== 'undefined' && SHEETS_CONFIG.DOCUMENT_ID !== 'PASTE_YOUR_SHEETS_ID_HERE';
+  const secretsOk  = typeof SECRETS !== 'undefined' && SECRETS.SHEETS_API_KEY !== 'YOUR_GOOGLE_SHEETS_API_KEY_HERE';
+  const scriptOk   = typeof SECRETS !== 'undefined' && !!SECRETS.APPS_SCRIPT_URL;
 
-  const sheetsOk = SHEETS_CONFIG.DOCUMENT_ID !== 'PASTE_YOUR_SHEETS_ID_HERE';
-  const secretsOk = typeof SECRETS !== 'undefined' &&
-    SECRETS.SHEETS_API_KEY !== 'YOUR_GOOGLE_SHEETS_API_KEY_HERE';
-
-  el.innerHTML = `
-    <div style="display:grid;gap:8px">
-      ${[
-        ['Google Sheets document ID', sheetsOk],
-        ['Sheets API key', secretsOk],
-        ['Apps Script web app', typeof SECRETS !== 'undefined' && !!SECRETS.APPS_SCRIPT_URL],
-      ].map(([label, ok]) => `
-        <div style="display:flex;align-items:center;gap:8px;font-size:var(--text-sm)">
-          <span style="color:${ok?'var(--color-success)':'var(--color-danger)'}">${ok?'✓':'✗'}</span>
-          <span>${label}</span>
-          <span style="font-size:11px;color:var(--color-text-secondary)">
-            ${ok ? 'Configured' : 'Not configured — see setup guide'}
-          </span>
+  el.innerHTML = `<div style="display:grid;gap:8px">
+    ${[
+      ['Google Sheets document ID', sheetsOk, sheetsOk ? 'Configured' : 'Not configured — paste ID into config/sheets-config.js'],
+      ['Sheets API key',            secretsOk, secretsOk ? 'Configured' : 'Not configured — create config/secrets.js from template'],
+      ['Apps Script web app URL',   scriptOk,  scriptOk  ? 'Configured' : 'Not configured — deploy sync/apps-script-api.gs and paste URL'],
+    ].map(([label, ok, msg]) => `
+      <div style="display:flex;align-items:flex-start;gap:8px;font-size:var(--text-sm)">
+        <span style="color:${ok?'var(--color-success)':'var(--color-danger)'};flex-shrink:0;margin-top:1px">${ok?'✓':'✗'}</span>
+        <div>
+          <div style="font-weight:500">${label}</div>
+          <div style="font-size:11px;color:var(--color-text-secondary)">${msg}</div>
         </div>
-      `).join('')}
-    </div>`;
+      </div>`).join('')}
+  </div>`;
+  loadAuditLog();
+}
+
+/* ════════════════════════════════════════
+   SETTINGS
+════════════════════════════════════════ */
+function changePassword() {
+  const current = document.getElementById('pw-current').value;
+  const newPw   = document.getElementById('pw-new').value;
+  const confirm = document.getElementById('pw-confirm').value;
+
+  /* Get stored password — falls back to dev default */
+  const stored = localStorage.getItem('bopinc_admin_pw') || 'bopinc-admin-2025';
+
+  if (current !== stored) {
+    showMsg('pw-status-msg', 'Current password is incorrect.', 'error');
+    return;
+  }
+  if (newPw.length < 12) {
+    showMsg('pw-status-msg', 'New password must be at least 12 characters.', 'error');
+    return;
+  }
+  if (newPw !== confirm) {
+    showMsg('pw-status-msg', 'Passwords do not match.', 'error');
+    return;
+  }
+
+  localStorage.setItem('bopinc_admin_pw', newPw);
+  ['pw-current','pw-new','pw-confirm'].forEach(id => { document.getElementById(id).value = ''; });
+  showMsg('pw-status-msg', 'Password updated. It takes effect on the next login.');
+  auditLog('Admin password changed');
+}
+
+function loadSettingsInfo() {
+  const sheetsOk  = typeof SHEETS_CONFIG !== 'undefined' && SHEETS_CONFIG.DOCUMENT_ID !== 'PASTE_YOUR_SHEETS_ID_HERE';
+  const scriptOk  = typeof SECRETS !== 'undefined' && !!SECRETS.APPS_SCRIPT_URL;
+  const pending   = JSON.parse(localStorage.getItem('bopinc_cr_queue') || '[]').filter(r => r.status === 'pending').length;
+  const projects  = JSON.parse(localStorage.getItem('bopinc_local_projects') || '[]').length;
+
+  const el = (id, val, ok) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = val;
+    el.style.color = ok === true ? 'var(--color-success)' : ok === false ? 'var(--color-danger)' : 'var(--color-text-primary)';
+  };
+  el('info-sheets',      sheetsOk ? 'Yes' : 'Not yet configured', sheetsOk);
+  el('info-appsscript',  scriptOk ? 'Configured' : 'Not configured', scriptOk);
+  el('info-pending',     pending + ' pending', null);
+  el('info-projects',    projects + ' projects', null);
 }
 
 /* ── Init ── */
 loadProjectsTable();
-/* Highlight the default active section */
-document.querySelector('.admin-nav-btn').classList.add('active');
+showSection('projects');
 </script>
 </body>
 </html>
