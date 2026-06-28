@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Admin — BOPinc Nigeria Dashboard</title>
+  <link rel="stylesheet" href="../src/styles/variables.css">
+  <link rel="stylesheet" href="../src/styles/main.css">
+  <link rel="stylesheet" href="../src/styles/responsive.css">
+  <style>
+    body {
+      background: var(--green-950);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-4);
+    }
+    .admin-login-card {
+      background: var(--color-surface);
+      border-radius: var(--radius-xl);
+      padding: var(--space-8);
+      width: 100%;
+      max-width: 380px;
+      box-shadow: var(--shadow-lg);
+    }
+    .admin-logo {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      margin-bottom: var(--space-6);
+    }
+    .admin-logo-mark {
+      width: 40px; height: 40px;
+      background: var(--color-accent);
+      border-radius: var(--radius-md);
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: var(--text-base); font-weight: 600;
+    }
+    .error-strip {
+      display: none;
+      padding: var(--space-3) var(--space-4);
+      background: var(--color-danger-bg);
+      border-left: 3px solid var(--color-danger);
+      border-radius: var(--radius-md);
+      font-size: var(--text-sm);
+      color: var(--color-danger);
+      margin-bottom: var(--space-4);
+    }
+    .admin-nav {
+      display: flex;
+      gap: var(--space-2);
+      flex-wrap: wrap;
+      margin-bottom: var(--space-6);
+      padding-bottom: var(--space-4);
+      border-bottom: 1px solid var(--color-border);
+    }
+    .admin-nav-link {
+      font-size: var(--text-sm);
+      font-weight: var(--weight-medium);
+      color: var(--color-text-secondary);
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-md);
+      text-decoration: none;
+      transition: background var(--transition-fast), color var(--transition-fast);
+    }
+    .admin-nav-link:hover, .admin-nav-link.active {
+      background: var(--color-accent-light);
+      color: var(--color-accent);
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-login-card" id="login-card">
+    <div class="admin-logo">
+      <div class="admin-logo-mark">BO</div>
+      <div>
+        <div style="font-size:var(--text-lg);font-weight:600">Admin panel</div>
+        <div style="font-size:var(--text-xs);color:var(--color-text-secondary)">BOPinc Nigeria Dashboard</div>
+      </div>
+    </div>
+
+    <div class="error-strip" id="error-strip">Incorrect password. Try again.</div>
+
+    <div class="form-group">
+      <label class="form-label" for="admin-password">Admin password</label>
+      <input class="form-input" type="password" id="admin-password"
+        placeholder="Enter admin password"
+        onkeydown="if(event.key==='Enter')adminLogin()">
+    </div>
+
+    <button class="btn btn-primary btn-full" onclick="adminLogin()" id="login-btn">
+      Access admin panel
+    </button>
+
+    <div style="margin-top:var(--space-4);text-align:center">
+      <a href="../index.html" style="font-size:var(--text-xs);color:var(--color-text-secondary)">
+        ← Back to dashboard
+      </a>
+    </div>
+  </div>
+
+  <script src="../config/roles.js"></script>
+  <script src="../config/sheets-config.js"></script>
+  <script>
+    /* Simple session check — if already authenticated, go straight to data-manager */
+    (function() {
+      if (sessionStorage.getItem('bopinc_admin_auth') === 'true') {
+        showPanel();
+      }
+    })();
+
+    function adminLogin() {
+      const pw  = document.getElementById('admin-password').value;
+      const btn = document.getElementById('login-btn');
+      const err = document.getElementById('error-strip');
+
+      /* Phase 2: plain text match against env.
+         Phase 4 upgrade: bcrypt hash comparison via Apps Script */
+      const ADMIN_PW = (typeof SECRETS !== 'undefined' && SECRETS.ADMIN_PASSWORD_HASH)
+        ? SECRETS.ADMIN_PASSWORD_HASH
+        : 'bopinc-admin-2025'; /* fallback dev password — change before launch */
+
+      btn.disabled = true;
+      btn.textContent = 'Checking…';
+      err.style.display = 'none';
+
+      setTimeout(() => {
+        if (pw === ADMIN_PW) {
+          sessionStorage.setItem('bopinc_admin_auth', 'true');
+          showPanel();
+        } else {
+          err.style.display = 'block';
+          btn.disabled = false;
+          btn.textContent = 'Access admin panel';
+          document.getElementById('admin-password').value = '';
+          document.getElementById('admin-password').focus();
+        }
+      }, 400); /* small delay prevents brute-force timing */
+    }
+
+    function showPanel() {
+      window.location.href = 'data-manager.html';
+    }
+  </script>
+</body>
+</html>
