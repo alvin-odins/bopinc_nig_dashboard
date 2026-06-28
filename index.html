@@ -558,10 +558,9 @@
       <div class="page-header">
         <div class="page-eyebrow">Strategy</div>
         <h1 class="page-title">Opportunities</h1>
+        <p class="page-subtitle">Active funding opportunities tracked by sector, value, and probability.</p>
       </div>
-      <div id="opportunities-content">
-        <!-- Populated by JS — either restricted screen or coming-soon based on role + phase -->
-      </div>
+      <div id="opportunities-content"></div>
     </section>
 
     <!-- ══ FUNDING ANALYSIS (role-gated) ══ -->
@@ -569,10 +568,9 @@
       <div class="page-header">
         <div class="page-eyebrow">Strategy</div>
         <h1 class="page-title">Funding analysis</h1>
+        <p class="page-subtitle">Pipeline funding by sector and status — confirmed, in progress, and at risk.</p>
       </div>
-      <div id="funding-content">
-        <!-- Populated by JS -->
-      </div>
+      <div id="funding-content"></div>
     </section>
 
     <!-- ══ GLOBAL PIPELINE (role-gated) ══ -->
@@ -608,6 +606,8 @@
 <script src="src/components/project-card.js"></script>
 <script src="src/components/chart-bar.js"></script>
 <script src="src/components/chart-heatmap.js"></script>
+<script src="src/components/chart-bubble.js"></script>
+<script src="src/components/chart-stacked.js"></script>
 <script src="src/components/export-toolbar.js"></script>
 <script>
 
@@ -929,7 +929,11 @@ function renderRestrictedContent(pageId) {
 }
 
 function renderRoleGatedContent() {
-  ['opportunities', 'funding-analysis', 'global-pipeline'].forEach(renderRestrictedContent);
+  /* Phase 5 pages have full implementations — re-render on role switch */
+  initOpportunitiesPage();
+  initFundingPage();
+  /* Global pipeline still placeholder until Phase 7 */
+  renderRestrictedContent('global-pipeline');
 }
 
 /* ════════════════════════════════════════
@@ -1382,6 +1386,425 @@ function updateNotifBadge() {
 }
 
 /* ════════════════════════════════════════
+   PHASE 5 — OPPORTUNITIES PAGE
+════════════════════════════════════════ */
+
+/* Demo opportunities — replaced by Sheets data when configured */
+const DEMO_OPPORTUNITIES = [
+  { id:'op1', name:'USAID Rural Energy',     sector:'Energy',      value:2500000, status:'active',   funder:'USAID',         deadline:'2025-09-30', probability:75, teamLead:'Chidi N.',  description:'Rural electrification programme for 12 communities in northern Nigeria.' },
+  { id:'op2', name:'GIZ Smallholder Farms',  sector:'Agriculture', value:1800000, status:'pipeline', funder:'GIZ',           deadline:'2025-11-15', probability:55, teamLead:'Fatima A.', description:'Smallholder farmer productivity and market access programme.' },
+  { id:'op3', name:'World Bank WASH II',     sector:'WASH',        value:3200000, status:'active',   funder:'World Bank',    deadline:'2025-08-01', probability:80, teamLead:'Ngozi A.',  description:'Phase 2 water and sanitation for peri-urban communities.' },
+  { id:'op4', name:'FCDO Girls Education',   sector:'Education',   value:900000,  status:'at-risk',  funder:'FCDO',          deadline:'2025-07-31', probability:30, teamLead:'Bola T.',   description:'Girls secondary education retention in north-east states.' },
+  { id:'op5', name:'AfDB Financial Inclusion',sector:'Finance',    value:4100000, status:'pipeline', funder:'AfDB',          deadline:'2026-01-20', probability:60, teamLead:'Emeka O.',  description:'Digital financial inclusion for informal sector workers.' },
+  { id:'op6', name:'BMGF Health Systems',    sector:'Health',      value:2200000, status:'active',   funder:'Bill & Melinda Gates', deadline:'2025-10-01', probability:70, teamLead:'Fatima A.', description:'Primary health care systems strengthening across 3 states.' },
+  { id:'op7', name:'EU Livelihoods',         sector:'Livelihoods', value:1500000, status:'won',      funder:'European Union',deadline:'2025-06-30', probability:100,teamLead:'Chidi N.',  description:'Youth livelihoods and enterprise development programme.' },
+  { id:'op8', name:'DFAT Gender Programme',  sector:'Gender',      value:750000,  status:'pipeline', funder:'DFAT Australia',deadline:'2025-12-01', probability:45, teamLead:'Ngozi A.',  description:'Gender-based violence prevention and economic empowerment.' },
+];
+
+const OppsState = { filter: 'all', selected: null, opportunities: [] };
+
+function initOpportunitiesPage() {
+  const session  = Session.get();
+  const role     = session ? session.role : ROLES.TEAM_MEMBER;
+  const container= document.getElementById('opportunities-content');
+  if (!container) return;
+
+  if (!canAccess('opportunities', role)) {
+    container.innerHTML = `<div class="restricted">
+      <div class="restricted-icon">${getIcon('lock', 40)}</div>
+      <div class="restricted-title">Access restricted</div>
+      <p class="restricted-body">This section is available to the partnerships lead and country director.</p>
+    </div>`;
+    return;
+  }
+
+  const opps = OppsState.opportunities.length > 0 ? OppsState.opportunities : DEMO_OPPORTUNITIES;
+
+  /* Summary stats */
+  const total     = opps.reduce((s, o) => s + (parseFloat(o.value)||0), 0);
+  const active    = opps.filter(o => o.status === 'active' || o.status === 'won');
+  const pipeline  = opps.filter(o => o.status === 'pipeline');
+  const atRisk    = opps.filter(o => o.status === 'at-risk');
+  const fmtVal    = v => v >= 1000000 ? `$${(v/1000000).toFixed(1)}M` : `$${(v/1000).toFixed(0)}K`;
+
+  container.innerHTML = `
+    <!-- Export toolbar -->
+    <div id="opps-export-toolbar"></div>
+
+    <!-- Summary stat cards -->
+    <div class="stat-grid" style="margin-bottom:var(--space-5)">
+      <div class="stat-card" style="--stat-accent:var(--color-accent)">
+        <div class="stat-label">Total pipeline</div>
+        <div class="stat-value" style="font-size:var(--text-xl)">${fmtVal(total)}</div>
+        <div class="stat-meta">${opps.length} opportunities</div>
+      </div>
+      <div class="stat-card" style="--stat-accent:#2e6843">
+        <div class="stat-label">Active / won</div>
+        <div class="stat-value" style="font-size:var(--text-xl)">${fmtVal(active.reduce((s,o)=>s+(parseFloat(o.value)||0),0))}</div>
+        <div class="stat-meta">${active.length} opportunities</div>
+      </div>
+      <div class="stat-card" style="--stat-accent:#d98f0f">
+        <div class="stat-label">At risk</div>
+        <div class="stat-value" style="font-size:var(--text-xl)">${fmtVal(atRisk.reduce((s,o)=>s+(parseFloat(o.value)||0),0))}</div>
+        <div class="stat-meta">${atRisk.length} opportunities</div>
+      </div>
+      <div class="stat-card" style="--stat-accent:#1d4ed8">
+        <div class="stat-label">Pipeline</div>
+        <div class="stat-value" style="font-size:var(--text-xl)">${fmtVal(pipeline.reduce((s,o)=>s+(parseFloat(o.value)||0),0))}</div>
+        <div class="stat-meta">${pipeline.length} opportunities</div>
+      </div>
+    </div>
+
+    <!-- Filter row -->
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:var(--space-4)">
+      ${['all','active','pipeline','at-risk','won'].map(s => `
+        <button class="opps-filter-btn ${OppsState.filter===s?'active':''}" data-filter="${s}"
+          style="padding:4px 12px;border-radius:var(--radius-full);font-size:var(--text-xs);
+            font-weight:500;cursor:pointer;border:1px solid var(--color-border);
+            background:${OppsState.filter===s?'var(--color-accent)':'var(--color-surface)'};
+            color:${OppsState.filter===s?'#fff':'var(--color-text-secondary)'};
+            transition:all .15s">
+          ${s === 'all' ? 'All' : s.charAt(0).toUpperCase()+s.slice(1)}
+        </button>`).join('')}
+    </div>
+
+    <!-- Bubble chart -->
+    <div class="card" style="margin-bottom:var(--space-4)">
+      <div class="card-header">
+        <div class="card-title">Pipeline map</div>
+        <div class="card-subtitle">Sector × probability — bubble size = funding value</div>
+      </div>
+      <div class="card-body">
+        <div id="opps-bubble-chart"></div>
+      </div>
+    </div>
+
+    <!-- Capacity gap engine -->
+    <div class="card" style="margin-bottom:var(--space-4)">
+      <div class="card-header">
+        <div class="card-title">Capacity gap analysis</div>
+        <div class="card-subtitle">Sectors with open opportunities vs team expertise coverage</div>
+      </div>
+      <div class="card-body" id="capacity-gap-container"></div>
+    </div>
+
+    <!-- Detail panel -->
+    <div id="opps-detail-panel" style="display:none" class="card">
+      <div class="card-body" id="opps-detail-content"></div>
+    </div>
+
+    <!-- Opportunities table -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">All opportunities</div>
+      </div>
+      <div class="card-body" style="padding:0" id="opps-table-container"></div>
+    </div>`;
+
+  /* Wire export toolbar */
+  ExportToolbar.render('opps-export-toolbar', {
+    title:  'Opportunities',
+    pageId: 'opportunities',
+    getData: () => (OppsState.opportunities.length > 0 ? OppsState.opportunities : DEMO_OPPORTUNITIES).map(o => ({
+      'Name': o.name, 'Sector': o.sector, 'Value': o.value,
+      'Status': o.status, 'Funder': o.funder,
+      'Deadline': o.deadline, 'Probability': o.probability + '%',
+      'Team lead': o.teamLead,
+    })),
+  });
+
+  /* Wire filters */
+  container.querySelectorAll('.opps-filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      OppsState.filter = btn.dataset.filter;
+      renderOpportunitiesContent(opps);
+    });
+  });
+
+  renderOpportunitiesContent(opps);
+  renderCapacityGap(opps);
+}
+
+function renderOpportunitiesContent(opps) {
+  const filtered = OppsState.filter === 'all'
+    ? opps
+    : opps.filter(o => o.status === OppsState.filter);
+
+  /* Update filter button styles */
+  document.querySelectorAll('.opps-filter-btn').forEach(btn => {
+    const active = btn.dataset.filter === OppsState.filter;
+    btn.style.background = active ? 'var(--color-accent)' : 'var(--color-surface)';
+    btn.style.color      = active ? '#fff' : 'var(--color-text-secondary)';
+    btn.style.borderColor= active ? 'var(--color-accent)' : 'var(--color-border)';
+  });
+
+  /* Bubble chart */
+  ChartBubble.render('opps-bubble-chart', filtered, {
+    onSelect: opp => showOpportunityDetail(opp),
+  });
+
+  /* Table */
+  const container = document.getElementById('opps-table-container');
+  if (!container) return;
+  if (filtered.length === 0) {
+    container.innerHTML = `<div style="padding:var(--space-5);text-align:center;
+      font-size:var(--text-sm);color:var(--color-text-secondary)">
+      No opportunities match this filter.</div>`;
+    return;
+  }
+
+  const statusBadge = s => ({
+    active:   'badge-green', pipeline: 'badge-blue',
+    'at-risk':'badge-amber', won:      'badge-green', closed: 'badge-slate',
+  }[s] || 'badge-slate');
+
+  const fmtVal = v => {
+    const n = parseFloat(v)||0;
+    return n >= 1000000 ? `$${(n/1000000).toFixed(1)}M` : `$${(n/1000).toFixed(0)}K`;
+  };
+
+  container.innerHTML = filtered.map(o => `
+    <div style="display:flex;align-items:center;gap:12px;padding:10px var(--space-5);
+      border-bottom:1px solid var(--color-border);cursor:pointer;transition:background .12s"
+      onmouseenter="this.style.background='var(--color-surface-2)'"
+      onmouseleave="this.style.background=''"
+      onclick="showOpportunityDetail(DEMO_OPPORTUNITIES.find(x=>x.id==='${o.id}') || OppsState.opportunities.find(x=>x.id==='${o.id}'))">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:var(--text-sm);font-weight:600;color:var(--color-text-primary)">${o.name}</div>
+        <div style="font-size:var(--text-xs);color:var(--color-text-secondary)">${o.funder} · ${o.sector} · Deadline ${o.deadline}</div>
+      </div>
+      <div style="font-size:var(--text-sm);font-weight:500;color:var(--color-text-primary)">${fmtVal(o.value)}</div>
+      <div style="font-size:var(--text-xs);color:var(--color-text-secondary);min-width:36px;text-align:right">${o.probability}%</div>
+      <span class="badge ${statusBadge(o.status)}" style="font-size:10px">${o.status}</span>
+    </div>`).join('');
+}
+
+function showOpportunityDetail(opp) {
+  if (!opp) return;
+  const panel   = document.getElementById('opps-detail-panel');
+  const content = document.getElementById('opps-detail-content');
+  if (!panel || !content) return;
+  const col     = ChartBubble.STATUS_COLOURS[opp.status] || ChartBubble.STATUS_COLOURS.pipeline;
+  const fmtVal  = v => { const n=parseFloat(v)||0; return n>=1000000?`$${(n/1000000).toFixed(1)}M`:`$${(n/1000).toFixed(0)}K`; };
+
+  content.innerHTML = `
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:var(--space-4)">
+      <div>
+        <div style="font-size:var(--text-lg);font-weight:600">${opp.name}</div>
+        <div style="font-size:var(--text-sm);color:var(--color-text-secondary);margin-top:3px">${opp.funder}</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="badge" style="background:${col.fill};color:${col.text};font-size:11px">${col.label}</span>
+        <button onclick="document.getElementById('opps-detail-panel').style.display='none'"
+          style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--color-text-tertiary)">✕</button>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:var(--space-4)">
+      ${[
+        ['Sector', opp.sector],
+        ['Value', fmtVal(opp.value)],
+        ['Probability', opp.probability + '%'],
+        ['Deadline', opp.deadline],
+        ['Team lead', opp.teamLead || '—'],
+      ].map(([l,v])=>`
+        <div style="padding:10px 12px;background:var(--color-surface-2);border-radius:var(--radius-md)">
+          <div style="font-size:10px;color:var(--color-text-secondary);text-transform:uppercase;
+            letter-spacing:.05em;margin-bottom:3px">${l}</div>
+          <div style="font-size:var(--text-sm);font-weight:500">${v}</div>
+        </div>`).join('')}
+    </div>
+    ${opp.description ? `<div style="font-size:var(--text-sm);color:var(--color-text-secondary);
+      line-height:1.6">${opp.description}</div>` : ''}`;
+
+  panel.style.display = 'block';
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function renderCapacityGap(opps) {
+  const container = document.getElementById('capacity-gap-container');
+  if (!container) return;
+
+  /* Get team expertise from roster */
+  const roster  = JSON.parse(localStorage.getItem('bopinc_local_roster') || '[]');
+  const allExpertise = roster.length > 0
+    ? roster.flatMap(m => (m.expertise || '').split(',').map(e => e.trim().toLowerCase()))
+    : ['energy','agriculture','health','wash','strategy','partnerships','finance','monitoring'];
+
+  /* Sectors with active/pipeline opportunities */
+  const oppSectors = [...new Set(
+    opps.filter(o => o.status === 'active' || o.status === 'pipeline')
+        .map(o => o.sector.toLowerCase())
+  )];
+
+  const rows = oppSectors.map(sector => {
+    const covered = allExpertise.includes(sector);
+    const count   = opps.filter(o => o.sector.toLowerCase() === sector &&
+      (o.status === 'active' || o.status === 'pipeline')).length;
+    return { sector, covered, count };
+  });
+
+  if (rows.length === 0) {
+    container.innerHTML = `<div style="font-size:var(--text-sm);color:var(--color-text-secondary)">
+      No active opportunities to analyse.</div>`;
+    return;
+  }
+
+  const gaps = rows.filter(r => !r.covered);
+
+  container.innerHTML = `
+    ${gaps.length > 0 ? `
+      <div style="padding:10px 14px;background:var(--amber-50);border-left:3px solid var(--amber-400);
+        border-radius:0 var(--radius-md) var(--radius-md) 0;margin-bottom:var(--space-4);
+        font-size:var(--text-sm);color:var(--amber-900)">
+        <strong>${gaps.length} gap${gaps.length!==1?'s':''} identified</strong> —
+        ${gaps.map(g=>g.sector).join(', ')} ${gaps.length===1?'has':'have'} active opportunities
+        but no team member with matching expertise.
+      </div>` : `
+      <div style="padding:10px 14px;background:var(--color-success-bg);border-left:3px solid var(--color-success);
+        border-radius:0 var(--radius-md) var(--radius-md) 0;margin-bottom:var(--space-4);
+        font-size:var(--text-sm);color:var(--color-success)">
+        ✓ No capacity gaps — all active opportunity sectors have team expertise coverage.
+      </div>`}
+    ${rows.map(r => `
+      <div style="display:flex;align-items:center;gap:10px;padding:7px 0;
+        border-bottom:0.5px solid var(--color-border)">
+        <div style="width:10px;height:10px;border-radius:50%;flex-shrink:0;
+          background:${r.covered?'var(--color-success)':'var(--color-danger)'}"></div>
+        <div style="flex:1;font-size:var(--text-sm);font-weight:500">${r.sector}</div>
+        <div style="font-size:var(--text-xs);color:var(--color-text-secondary)">${r.count} active/pipeline</div>
+        <span class="badge ${r.covered?'badge-green':'badge-red'}" style="font-size:10px">
+          ${r.covered?'Covered':'Gap'}</span>
+      </div>`).join('')}`;
+}
+
+/* ════════════════════════════════════════
+   PHASE 5 — FUNDING ANALYSIS PAGE
+════════════════════════════════════════ */
+function initFundingPage() {
+  const session   = Session.get();
+  const role      = session ? session.role : ROLES.TEAM_MEMBER;
+  const container = document.getElementById('funding-content');
+  if (!container) return;
+
+  if (!canAccess('funding-analysis', role)) {
+    container.innerHTML = `<div class="restricted">
+      <div class="restricted-icon">${getIcon('lock', 40)}</div>
+      <div class="restricted-title">Access restricted</div>
+      <p class="restricted-body">This section is available to the partnerships lead and country director.</p>
+    </div>`;
+    return;
+  }
+
+  const opps = OppsState.opportunities.length > 0 ? OppsState.opportunities : DEMO_OPPORTUNITIES;
+
+  /* Build stacked data by sector */
+  const sectors = [...new Set(opps.map(o => o.sector))].sort();
+  const stackedData = sectors.map(sector => {
+    const sectorOpps = opps.filter(o => o.sector === sector);
+    const statuses   = ['won','active','pipeline','at-risk','closed'];
+    const segments   = statuses
+      .map(s => ({
+        status: s,
+        value:  sectorOpps.filter(o => o.status === s)
+                          .reduce((sum, o) => sum + (parseFloat(o.value)||0), 0),
+      }))
+      .filter(s => s.value > 0);
+    return { label: sector, segments };
+  }).filter(d => d.segments.length > 0);
+
+  /* Summary stats */
+  const confirmed = opps.filter(o=>o.status==='active'||o.status==='won')
+                        .reduce((s,o)=>s+(parseFloat(o.value)||0),0);
+  const pipeline  = opps.filter(o=>o.status==='pipeline')
+                        .reduce((s,o)=>s+(parseFloat(o.value)||0),0);
+  const atRisk    = opps.filter(o=>o.status==='at-risk')
+                        .reduce((s,o)=>s+(parseFloat(o.value)||0),0);
+  const total     = confirmed + pipeline + atRisk;
+  const fmtVal    = v => v>=1000000?`$${(v/1000000).toFixed(1)}M`:`$${(v/1000).toFixed(0)}K`;
+
+  container.innerHTML = `
+    <div id="funding-export-toolbar"></div>
+
+    <div class="stat-grid" style="margin-bottom:var(--space-5)">
+      <div class="stat-card" style="--stat-accent:var(--color-accent)">
+        <div class="stat-label">Total tracked</div>
+        <div class="stat-value" style="font-size:var(--text-xl)">${fmtVal(total)}</div>
+        <div class="stat-meta">across ${sectors.length} sectors</div>
+      </div>
+      <div class="stat-card" style="--stat-accent:#2e6843">
+        <div class="stat-label">Active / won</div>
+        <div class="stat-value" style="font-size:var(--text-xl)">${fmtVal(confirmed)}</div>
+        <div class="stat-meta">${Math.round(total>0?(confirmed/total)*100:0)}% of total</div>
+      </div>
+      <div class="stat-card" style="--stat-accent:#1d4ed8">
+        <div class="stat-label">Pipeline</div>
+        <div class="stat-value" style="font-size:var(--text-xl)">${fmtVal(pipeline)}</div>
+        <div class="stat-meta">${Math.round(total>0?(pipeline/total)*100:0)}% of total</div>
+      </div>
+      <div class="stat-card" style="--stat-accent:#d98f0f">
+        <div class="stat-label">At risk</div>
+        <div class="stat-value" style="font-size:var(--text-xl)">${fmtVal(atRisk)}</div>
+        <div class="stat-meta">${Math.round(total>0?(atRisk/total)*100:0)}% of total</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:var(--space-4)">
+      <div class="card-header">
+        <div class="card-title">Funding by sector</div>
+        <div class="card-subtitle">Stacked by status — confirmed, pipeline, at risk</div>
+      </div>
+      <div class="card-body">
+        <div id="funding-stacked-chart"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Sector breakdown</div>
+      </div>
+      <div class="card-body" style="padding:0" id="funding-sector-table"></div>
+    </div>`;
+
+  ExportToolbar.render('funding-export-toolbar', {
+    title:  'Funding Analysis',
+    pageId: 'funding-analysis',
+    getData: () => stackedData.flatMap(row =>
+      row.segments.map(s => ({
+        'Sector': row.label,
+        'Status': s.status,
+        'Value':  s.value,
+        'Formatted': fmtVal(s.value),
+      }))
+    ),
+  });
+
+  ChartStacked.render('funding-stacked-chart', stackedData, { currency: true });
+
+  /* Sector table */
+  const tbl = document.getElementById('funding-sector-table');
+  if (tbl) {
+    tbl.innerHTML = stackedData.map(row => {
+      const rowTotal = row.segments.reduce((s, seg) => s + seg.value, 0);
+      return `
+        <div style="display:flex;align-items:center;gap:12px;padding:10px var(--space-5);
+          border-bottom:1px solid var(--color-border)">
+          <div style="flex:1;font-size:var(--text-sm);font-weight:500">${row.label}</div>
+          ${row.segments.map(s => {
+            const col = ChartStacked.STATUS_COLOURS[s.status] || {fill:'#94a3b8',label:s.status};
+            return `<div style="font-size:var(--text-xs);color:var(--color-text-secondary)">
+              <span style="display:inline-block;width:8px;height:8px;border-radius:2px;
+                background:${col.fill};margin-right:3px;vertical-align:middle"></span>
+              ${col.label}: ${fmtVal(s.value)}
+            </div>`;
+          }).join('')}
+          <div style="font-size:var(--text-sm);font-weight:600;min-width:60px;text-align:right">
+            ${fmtVal(rowTotal)}</div>
+        </div>`;
+    }).join('');
+  }
+}
+
+/* ════════════════════════════════════════
    PHASE 3 — TEAM PULSE PAGE
 ════════════════════════════════════════ */
 const PulseState = { date: new Date().toISOString().slice(0, 10), events: [] };
@@ -1809,6 +2232,10 @@ async function bootDashboard(session) {
   initLeaveTrackerPage();
   initRelationshipsPage();
 
+  /* Init Phase 5 pages */
+  initOpportunitiesPage();
+  initFundingPage();
+
   /* Load live data asynchronously */
   loadLiveData(session);
 
@@ -1905,6 +2332,25 @@ async function loadLiveData(session) {
         status:       row.status       || 'approved',
       }));
       renderLeaveHeatmap();
+    }
+
+    /* ── Phase 5: Opportunities ── */
+    const oppsData = await SheetsClient.get(SHEETS_CONFIG.TABS.OPPORTUNITIES);
+    if (oppsData && oppsData.length > 0) {
+      OppsState.opportunities = oppsData.map(row => ({
+        id:          row.id          || '',
+        name:        row.name        || '',
+        sector:      row.sector      || '',
+        value:       parseFloat(row.value) || 0,
+        status:      row.status      || 'pipeline',
+        funder:      row.funder      || '',
+        deadline:    row.deadline    || '',
+        probability: parseFloat(row.probability) || 50,
+        teamLead:    row.teamLead    || '',
+        description: row.description || '',
+      }));
+      initOpportunitiesPage();
+      initFundingPage();
     }
 
     /* Update sync time display */
