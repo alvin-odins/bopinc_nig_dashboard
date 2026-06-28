@@ -321,13 +321,64 @@
       <div class="page-header">
         <div class="page-eyebrow">Schedules</div>
         <h1 class="page-title">Team pulse</h1>
-        <p class="page-subtitle">Daily and weekly schedule for every team member.</p>
+        <p class="page-subtitle">Daily schedule for every team member — meetings, focus time, and leave.</p>
       </div>
-      <div class="coming-soon">
-        <div class="coming-soon-icon" aria-hidden="true">📅</div>
-        <div class="coming-soon-title">Team pulse is coming</div>
-        <p>Full swimlane schedule view with meeting, focus, and leave blocks — synced from Google Calendar.</p>
-        <span class="coming-soon-phase">Phase 3 — Weeks 5–6</span>
+
+      <!-- Export toolbar -->
+      <div id="pulse-export-toolbar"></div>
+
+      <!-- Date navigator -->
+      <div style="display:flex;align-items:center;gap:var(--space-3);margin-bottom:var(--space-4)">
+        <button class="btn btn-secondary btn-sm" id="pulse-prev-day"
+          aria-label="Previous day">
+          ← Prev
+        </button>
+        <div style="flex:1;text-align:center">
+          <span id="pulse-date-label" style="font-size:var(--text-base);font-weight:500"></span>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="pulse-today-btn">Today</button>
+        <button class="btn btn-secondary btn-sm" id="pulse-next-day"
+          aria-label="Next day">
+          Next →
+        </button>
+      </div>
+
+      <!-- Sub-tabs: Day / Week -->
+      <div style="display:flex;gap:4px;margin-bottom:var(--space-4);
+        border-bottom:1px solid var(--color-border);padding-bottom:0">
+        <button class="pulse-sub-tab active" data-view="day"
+          style="padding:6px 16px;font-size:var(--text-sm);font-weight:500;
+            border:none;background:none;cursor:pointer;border-bottom:2px solid var(--color-accent);
+            color:var(--color-accent);margin-bottom:-1px">
+          Day view
+        </button>
+        <button class="pulse-sub-tab" data-view="list"
+          style="padding:6px 16px;font-size:var(--text-sm);font-weight:500;
+            border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;
+            color:var(--color-text-secondary);margin-bottom:-1px">
+          List view
+        </button>
+      </div>
+
+      <!-- Swimlane chart -->
+      <div id="pulse-chart-container" style="overflow-x:auto">
+        <div id="pulse-chart"></div>
+      </div>
+
+      <!-- Legend (injected by ChartBar.legend()) -->
+      <div id="pulse-legend"></div>
+
+      <!-- List view (hidden by default) -->
+      <div id="pulse-list-view" style="display:none" aria-live="polite"></div>
+
+      <!-- Sync notice -->
+      <div style="margin-top:var(--space-4);padding:var(--space-3) var(--space-4);
+        background:var(--color-surface-2);border-radius:var(--radius-md);
+        font-size:var(--text-xs);color:var(--color-text-secondary)">
+        <strong style="color:var(--color-text-primary)">Live data:</strong>
+        Synced from Google Calendar every 30 minutes.
+        Last sync: <span id="pulse-last-sync">checking…</span>
+        · <a href="admin/data-manager.html" style="color:var(--color-accent)">Sync now</a>
       </div>
     </section>
 
@@ -336,13 +387,57 @@
       <div class="page-header">
         <div class="page-eyebrow">Connections</div>
         <h1 class="page-title">Working relationships</h1>
-        <p class="page-subtitle">Cross-country and global team connections from calendar data.</p>
+        <p class="page-subtitle">Who the Nigeria team collaborates with — across BOPinc countries and global HQ.</p>
       </div>
-      <div class="coming-soon">
-        <div class="coming-soon-icon" aria-hidden="true">🌐</div>
-        <div class="coming-soon-title">Relationships map is coming</div>
-        <p>Calendar-derived map of who the Nigeria team collaborates with across BOPinc countries and global HQ.</p>
-        <span class="coming-soon-phase">Phase 3 — Weeks 5–6</span>
+
+      <!-- Export toolbar -->
+      <div id="rel-export-toolbar"></div>
+
+      <!-- Summary cards -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+        gap:var(--space-3);margin-bottom:var(--space-5)">
+        <div class="stat-card" style="--stat-accent:var(--color-accent)">
+          <div class="stat-label">Unique collaborators</div>
+          <div class="stat-value" id="rel-collaborators">—</div>
+          <div class="stat-meta">across all countries</div>
+        </div>
+        <div class="stat-card" style="--stat-accent:var(--blue-500)">
+          <div class="stat-label">Shared meetings</div>
+          <div class="stat-value" id="rel-meetings">—</div>
+          <div class="stat-meta">this month</div>
+        </div>
+        <div class="stat-card" style="--stat-accent:var(--amber-500)">
+          <div class="stat-label">Most connected</div>
+          <div class="stat-value" style="font-size:var(--text-base)" id="rel-top-person">—</div>
+          <div class="stat-meta" id="rel-top-count"></div>
+        </div>
+      </div>
+
+      <!-- Collaboration list -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Collaboration map</div>
+          <div class="card-subtitle">Derived from shared calendar events this month</div>
+        </div>
+        <div class="card-body" id="rel-map-container" style="padding:0">
+          <div style="padding:var(--space-4);font-size:var(--text-sm);
+            color:var(--color-text-secondary);text-align:center" id="rel-map-content">
+            Loading collaboration data…
+          </div>
+        </div>
+      </div>
+
+      <!-- Per-person breakdown -->
+      <div style="margin-top:var(--space-4)" id="rel-person-breakdown"></div>
+
+      <!-- Sync notice -->
+      <div style="margin-top:var(--space-4);padding:var(--space-3) var(--space-4);
+        background:var(--color-surface-2);border-radius:var(--radius-md);
+        font-size:var(--text-xs);color:var(--color-text-secondary)">
+        <strong style="color:var(--color-text-primary)">How this works:</strong>
+        Relationships are inferred from shared Google Calendar events. A meeting
+        with two or more BOPinc email addresses generates a collaboration link.
+        Data syncs every 30 minutes.
       </div>
     </section>
 
@@ -351,13 +446,61 @@
       <div class="page-header">
         <div class="page-eyebrow">Availability</div>
         <h1 class="page-title">Leave tracker</h1>
-        <p class="page-subtitle">Nigeria team and global colleagues — who's available, who's out.</p>
+        <p class="page-subtitle">Team leave at a glance — spot coverage gaps before they happen.</p>
       </div>
-      <div class="coming-soon">
-        <div class="coming-soon-icon" aria-hidden="true">🗓️</div>
-        <div class="coming-soon-title">Leave heatmap is coming</div>
-        <p>Heatmap calendar showing Nigeria team leave days alongside global team availability for informed planning.</p>
-        <span class="coming-soon-phase">Phase 3 — Weeks 5–6</span>
+
+      <!-- Export toolbar -->
+      <div id="leave-export-toolbar"></div>
+
+      <!-- Month navigator -->
+      <div style="display:flex;align-items:center;gap:var(--space-3);margin-bottom:var(--space-4)">
+        <button class="btn btn-secondary btn-sm" id="leave-prev-month">← Prev</button>
+        <div style="flex:1;text-align:center">
+          <span id="leave-month-label" style="font-size:var(--text-base);font-weight:500"></span>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="leave-this-month">This month</button>
+        <button class="btn btn-secondary btn-sm" id="leave-next-month">Next →</button>
+      </div>
+
+      <!-- Sub-tabs: Heatmap / List -->
+      <div style="display:flex;gap:4px;margin-bottom:var(--space-4);
+        border-bottom:1px solid var(--color-border);padding-bottom:0">
+        <button class="leave-sub-tab active" data-view="heatmap"
+          style="padding:6px 16px;font-size:var(--text-sm);font-weight:500;
+            border:none;background:none;cursor:pointer;border-bottom:2px solid var(--color-accent);
+            color:var(--color-accent);margin-bottom:-1px">
+          Heatmap
+        </button>
+        <button class="leave-sub-tab" data-view="list"
+          style="padding:6px 16px;font-size:var(--text-sm);font-weight:500;
+            border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;
+            color:var(--color-text-secondary);margin-bottom:-1px">
+          By person
+        </button>
+      </div>
+
+      <!-- Heatmap view -->
+      <div id="leave-heatmap-view">
+        <div id="leave-heatmap"></div>
+      </div>
+
+      <!-- List view (by person) -->
+      <div id="leave-list-view" style="display:none" aria-live="polite">
+        <div id="leave-list-container"></div>
+      </div>
+
+      <!-- Sync notice -->
+      <div style="margin-top:var(--space-4);padding:var(--space-3) var(--space-4);
+        background:var(--color-surface-2);border-radius:var(--radius-md);
+        font-size:var(--text-xs);color:var(--color-text-secondary)">
+        <strong style="color:var(--color-text-primary)">Live data:</strong>
+        Leave entries synced from Google Calendar.
+        To submit a leave correction, use
+        <button onclick="ChangeRequest.open({field:'leave'})"
+          style="color:var(--color-accent);background:none;border:none;
+            cursor:pointer;padding:0;font-size:inherit;text-decoration:underline">
+          Request a correction
+        </button>.
       </div>
     </section>
 
@@ -463,6 +606,9 @@
 <script src="src/components/bottom-nav.js"></script>
 <script src="src/components/change-request-modal.js"></script>
 <script src="src/components/project-card.js"></script>
+<script src="src/components/chart-bar.js"></script>
+<script src="src/components/chart-heatmap.js"></script>
+<script src="src/components/export-toolbar.js"></script>
 <script>
 
 /* ════════════════════════════════════════
@@ -1235,10 +1381,286 @@ function updateNotifBadge() {
   }
 }
 
+/* ════════════════════════════════════════
+   PHASE 3 — TEAM PULSE PAGE
+════════════════════════════════════════ */
+const PulseState = { date: new Date().toISOString().slice(0, 10), events: [] };
+
+function initTeamPulsePage() {
+  const updatePulseDate = () => {
+    const label = new Date(PulseState.date + 'T12:00:00')
+      .toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+    const el = document.getElementById('pulse-date-label');
+    if (el) el.textContent = label;
+    renderPulseChart();
+  };
+
+  document.getElementById('pulse-prev-day')?.addEventListener('click', () => {
+    const d = new Date(PulseState.date + 'T12:00:00');
+    d.setDate(d.getDate() - 1);
+    PulseState.date = d.toISOString().slice(0, 10);
+    updatePulseDate();
+  });
+  document.getElementById('pulse-next-day')?.addEventListener('click', () => {
+    const d = new Date(PulseState.date + 'T12:00:00');
+    d.setDate(d.getDate() + 1);
+    PulseState.date = d.toISOString().slice(0, 10);
+    updatePulseDate();
+  });
+  document.getElementById('pulse-today-btn')?.addEventListener('click', () => {
+    PulseState.date = new Date().toISOString().slice(0, 10);
+    updatePulseDate();
+  });
+
+  document.querySelectorAll('.pulse-sub-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.pulse-sub-tab').forEach(t => {
+        t.style.borderBottomColor = 'transparent';
+        t.style.color = 'var(--color-text-secondary)';
+      });
+      tab.style.borderBottomColor = 'var(--color-accent)';
+      tab.style.color = 'var(--color-accent)';
+      const view = tab.dataset.view;
+      document.getElementById('pulse-chart-container').style.display = view === 'day' ? 'block' : 'none';
+      document.getElementById('pulse-legend').style.display = view === 'day' ? 'block' : 'none';
+      document.getElementById('pulse-list-view').style.display = view === 'list' ? 'block' : 'none';
+      if (view === 'list') renderPulseList();
+    });
+  });
+
+  ExportToolbar.render('pulse-export-toolbar', {
+    title: 'Team Pulse',
+    getData: () => ExportToolbar.formatEventsForCSV(PulseState.events),
+  });
+
+  updatePulseDate();
+}
+
+function renderPulseChart() {
+  const events = PulseState.events.length > 0
+    ? PulseState.events
+    : DEMO_SCHEDULE.flatMap(person =>
+        person.bars.map(b => ({
+          userId: `demo_${person.initials}`, userName: person.name,
+          userInitials: person.initials, avatarColor: person.color,
+          title: b.label, type: b.type, isLeave: b.type === 'leave',
+          isAllDay: b.type === 'leave',
+          startHour: 7 + parseFloat(b.left) / 100 * 13,
+          endHour: 7 + (parseFloat(b.left) + parseFloat(b.width)) / 100 * 13,
+          date: PulseState.date,
+        }))
+      );
+  ChartBar.render('pulse-chart', events, { date: PulseState.date });
+  document.getElementById('pulse-legend').innerHTML = ChartBar.legend();
+  const syncTime = SheetsClient.lastSynced(SHEETS_CONFIG.TABS.CALENDAR_EVENTS);
+  const syncEl = document.getElementById('pulse-last-sync');
+  if (syncEl) syncEl.textContent = syncTime || (PulseState.events.length === 0 ? 'using demo data' : 'just now');
+}
+
+function renderPulseList() {
+  const container = document.getElementById('pulse-list-view');
+  if (!container) return;
+  const events = PulseState.events.filter(e => e.date === PulseState.date);
+  if (events.length === 0) {
+    container.innerHTML = `<div class="coming-soon" style="padding:var(--space-8)">
+      <div class="coming-soon-icon">📅</div>
+      <div class="coming-soon-title">No calendar data yet</div>
+      <p>Configure Google Calendar sync to see live schedules.</p></div>`;
+    return;
+  }
+  const byUser = {};
+  events.forEach(e => {
+    if (!byUser[e.userId]) byUser[e.userId] = { name: e.userName, events: [] };
+    byUser[e.userId].events.push(e);
+  });
+  container.innerHTML = Object.values(byUser).map(u => `
+    <div class="card" style="margin-bottom:var(--space-3)">
+      <div class="card-header">
+        <div class="card-title">${u.name}</div>
+        <div class="card-subtitle">${u.events.length} event${u.events.length !== 1 ? 's' : ''}</div>
+      </div>
+      <div class="card-body" style="padding:0">
+        ${u.events.sort((a,b) => a.startHour - b.startHour).map(e => {
+          const col = ChartBar.COLOURS[e.type] || ChartBar.COLOURS.meeting;
+          return `<div style="display:flex;align-items:center;gap:10px;
+            padding:8px var(--space-5);border-bottom:1px solid var(--color-border)">
+            <div style="width:10px;height:10px;border-radius:2px;background:${col.fill};flex-shrink:0"></div>
+            <div style="flex:1;font-size:var(--text-sm)">${e.title}</div>
+            <div style="font-size:var(--text-xs);color:var(--color-text-secondary)">
+              ${ChartBar._fmtHour(e.startHour)} – ${ChartBar._fmtHour(e.endHour)}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`).join('');
+}
+
+/* ════════════════════════════════════════
+   PHASE 3 — LEAVE TRACKER PAGE
+════════════════════════════════════════ */
+const LeaveState = { year: new Date().getFullYear(), month: new Date().getMonth(), records: [] };
+
+function initLeaveTrackerPage() {
+  const updateMonth = () => {
+    const label = new Date(LeaveState.year, LeaveState.month, 1)
+      .toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+    const el = document.getElementById('leave-month-label');
+    if (el) el.textContent = label;
+    renderLeaveHeatmap();
+  };
+
+  document.getElementById('leave-prev-month')?.addEventListener('click', () => {
+    if (LeaveState.month === 0) { LeaveState.month = 11; LeaveState.year--; }
+    else LeaveState.month--;
+    updateMonth();
+  });
+  document.getElementById('leave-next-month')?.addEventListener('click', () => {
+    if (LeaveState.month === 11) { LeaveState.month = 0; LeaveState.year++; }
+    else LeaveState.month++;
+    updateMonth();
+  });
+  document.getElementById('leave-this-month')?.addEventListener('click', () => {
+    LeaveState.year = new Date().getFullYear();
+    LeaveState.month = new Date().getMonth();
+    updateMonth();
+  });
+
+  document.querySelectorAll('.leave-sub-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.leave-sub-tab').forEach(t => {
+        t.style.borderBottomColor = 'transparent';
+        t.style.color = 'var(--color-text-secondary)';
+      });
+      tab.style.borderBottomColor = 'var(--color-accent)';
+      tab.style.color = 'var(--color-accent)';
+      const view = tab.dataset.view;
+      document.getElementById('leave-heatmap-view').style.display = view === 'heatmap' ? 'block' : 'none';
+      document.getElementById('leave-list-view').style.display = view === 'list' ? 'block' : 'none';
+      if (view === 'list') renderLeaveList();
+    });
+  });
+
+  ExportToolbar.render('leave-export-toolbar', {
+    title: 'Leave Tracker',
+    getData: () => ExportToolbar.formatLeaveForCSV(LeaveState.records),
+  });
+
+  updateMonth();
+}
+
+function renderLeaveHeatmap() {
+  ChartHeatmap.render('leave-heatmap', LeaveState.records, {
+    year: LeaveState.year, month: LeaveState.month,
+  });
+}
+
+function renderLeaveList() {
+  const container = document.getElementById('leave-list-container');
+  if (!container) return;
+  if (LeaveState.records.length === 0) {
+    container.innerHTML = `<div class="coming-soon" style="padding:var(--space-6)">
+      <div class="coming-soon-icon">🗓️</div>
+      <div class="coming-soon-title">No leave records</div>
+      <p>Google Calendar sync will populate this automatically.</p></div>`;
+    return;
+  }
+  const byPerson = {};
+  LeaveState.records.forEach(r => {
+    if (!byPerson[r.userId]) byPerson[r.userId] = { name: r.userName, records: [] };
+    byPerson[r.userId].records.push(r);
+  });
+  container.innerHTML = Object.values(byPerson).map(p => `
+    <div class="card" style="margin-bottom:var(--space-3)">
+      <div class="card-header">
+        <div class="card-title">${p.name}</div>
+        <div class="card-subtitle">${p.records.length} leave record${p.records.length !== 1 ? 's' : ''}</div>
+      </div>
+      <div class="card-body" style="padding:0">
+        ${p.records.map(r => `
+          <div style="display:flex;align-items:center;gap:10px;
+            padding:8px var(--space-5);border-bottom:1px solid var(--color-border)">
+            <div style="flex:1">
+              <div style="font-size:var(--text-sm);font-weight:500">${r.type}</div>
+              <div style="font-size:var(--text-xs);color:var(--color-text-secondary)">
+                ${r.startDate} → ${r.endDate}
+                ${r.durationDays ? `· ${r.durationDays} day${r.durationDays !== 1 ? 's' : ''}` : ''}
+              </div>
+            </div>
+            <span class="badge ${r.status === 'approved' ? 'badge-green' : 'badge-amber'}"
+              style="font-size:10px">${r.status || 'pending'}</span>
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+/* ════════════════════════════════════════
+   PHASE 3 — RELATIONSHIPS PAGE
+════════════════════════════════════════ */
+function initRelationshipsPage() {
+  ExportToolbar.render('rel-export-toolbar', {
+    title: 'Working Relationships',
+    getData: () => [],
+  });
+  renderRelationships([]);
+}
+
+function renderRelationships(events) {
+  const mapContainer = document.getElementById('rel-map-content');
+  if (!events || events.length === 0) {
+    if (mapContainer) mapContainer.innerHTML = `
+      <div style="padding:var(--space-6);text-align:center">
+        <div style="font-size:32px;margin-bottom:var(--space-3)">🌐</div>
+        <div style="font-size:var(--text-sm);font-weight:500;margin-bottom:4px">No collaboration data yet</div>
+        <div style="font-size:var(--text-sm);color:var(--color-text-secondary)">
+          Set up Google Calendar sync to build this map automatically.</div>
+      </div>`;
+    ['rel-collaborators','rel-meetings','rel-top-person'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.textContent = '—';
+    });
+    return;
+  }
+  const links = {};
+  events.filter(e => e.type === 'meeting' && e.attendees).forEach(e => {
+    const attendees = (e.attendees || '').split(',').map(a => a.trim()).filter(Boolean);
+    attendees.forEach((a, i) => attendees.slice(i + 1).forEach(b => {
+      const key = [a, b].sort().join('::');
+      links[key] = (links[key] || 0) + 1;
+    }));
+  });
+  const uniqueCollaborators = new Set(Object.keys(links).flatMap(k => k.split('::'))).size;
+  const totalMeetings = Object.values(links).reduce((s, v) => s + v, 0);
+  const el1 = document.getElementById('rel-collaborators');
+  const el2 = document.getElementById('rel-meetings');
+  if (el1) el1.textContent = uniqueCollaborators;
+  if (el2) el2.textContent = totalMeetings;
+  const personMeetings = {};
+  Object.entries(links).forEach(([key, count]) => {
+    key.split('::').forEach(p => { personMeetings[p] = (personMeetings[p] || 0) + count; });
+  });
+  const topPerson = Object.entries(personMeetings).sort((a, b) => b[1] - a[1])[0];
+  const el3 = document.getElementById('rel-top-person');
+  const el4 = document.getElementById('rel-top-count');
+  if (el3 && topPerson) el3.textContent = topPerson[0].split('@')[0];
+  if (el4 && topPerson) el4.textContent = `${topPerson[1]} shared meetings`;
+  if (mapContainer) {
+    const sorted = Object.entries(links).sort((a, b) => b[1] - a[1]);
+    mapContainer.innerHTML = sorted.map(([pair, count]) => {
+      const [a, b] = pair.split('::').map(p => p.split('@')[0]);
+      return `<div style="display:flex;align-items:center;gap:10px;
+        padding:8px var(--space-4);border-bottom:1px solid var(--color-border)">
+        <div style="flex:1;font-size:var(--text-sm)"><strong>${a}</strong> ↔ <strong>${b}</strong></div>
+        <div style="font-size:var(--text-xs);color:var(--color-text-secondary)">
+          ${count} shared meeting${count !== 1 ? 's' : ''}</div>
+        <div style="height:4px;width:${Math.min(count * 20, 100)}px;
+          background:var(--color-accent);border-radius:2px;opacity:0.7"></div>
+      </div>`;
+    }).join('');
+  }
+}
+
 
 /* ════════════════════════════════════════
    BOOT — called after login is confirmed
-   ════════════════════════════════════════ */
+════════════════════════════════════════ */
 async function bootDashboard(session) {
   updateHeaderUser(session);
   renderNav();
@@ -1273,6 +1695,11 @@ async function bootDashboard(session) {
   /* Hide dev banner if Sheets is configured */
   const banner = document.getElementById('dev-banner');
   if (banner && sheetsConfigured) banner.style.display = 'none';
+
+  /* Init Phase 3 pages */
+  initTeamPulsePage();
+  initLeaveTrackerPage();
+  initRelationshipsPage();
 
   /* Load live data asynchronously */
   loadLiveData(session);
@@ -1331,6 +1758,45 @@ async function loadLiveData(session) {
           metaEl.textContent = `${visitors[0]?.country || ''} · ${visitors.length} ${visitors.length === 1 ? 'person' : 'people'}`;
         }
       }
+    }
+
+    /* ── Phase 3: Calendar events ── */
+    const calEvents = await SheetsClient.get(SHEETS_CONFIG.TABS.CALENDAR_EVENTS);
+    if (calEvents && calEvents.length > 0) {
+      PulseState.events = calEvents.map(row => ({
+        userId:       row.userId       || '',
+        userName:     row.userName     || '',
+        userInitials: row.userInitials || '',
+        avatarColor:  parseInt(row.avatarColor, 10) || 0,
+        title:        row.title        || '',
+        type:         row.type         || 'meeting',
+        isLeave:      row.isLeave === 'true' || row.isLeave === true,
+        isAllDay:     row.isAllDay === 'true' || row.isAllDay === true,
+        startHour:    parseFloat(row.startHour) || 9,
+        endHour:      parseFloat(row.endHour)   || 10,
+        date:         row.date         || '',
+        week:         row.week         || '',
+        location:     row.location     || '',
+        attendees:    row.attendees    || '',
+      }));
+      renderPulseChart();
+      renderRelationships(PulseState.events);
+    }
+
+    /* ── Phase 3: Leave records ── */
+    const leaveRecs = await SheetsClient.get(SHEETS_CONFIG.TABS.LEAVE_RECORDS);
+    if (leaveRecs && leaveRecs.length > 0) {
+      LeaveState.records = leaveRecs.map(row => ({
+        id:           row.id           || '',
+        userId:       row.userId       || '',
+        userName:     row.userName     || '',
+        type:         row.type         || 'Annual leave',
+        startDate:    row.startDate    || '',
+        endDate:      row.endDate      || '',
+        durationDays: parseInt(row.durationDays, 10) || 1,
+        status:       row.status       || 'approved',
+      }));
+      renderLeaveHeatmap();
     }
 
     /* Update sync time display */
