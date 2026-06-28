@@ -528,14 +528,9 @@
       <div class="page-header">
         <div class="page-eyebrow">Intelligence</div>
         <h1 class="page-title">Slack intel</h1>
-        <p class="page-subtitle">Your mentions, sector alerts, and opportunity signals — filtered by your role.</p>
+        <p class="page-subtitle">Your mentions, sector alerts, and opportunity signals — filtered to your role and expertise.</p>
       </div>
-      <div class="coming-soon">
-        <div class="coming-soon-icon" aria-hidden="true">💬</div>
-        <div class="coming-soon-title">Slack intelligence is coming</div>
-        <p>Personalised alerts: your mentions, sector keyword matches routed to the right person, and urgency-scored opportunity signals.</p>
-        <span class="coming-soon-phase">Phase 6 — Weeks 11–12</span>
-      </div>
+      <div id="slack-intel-content"></div>
     </section>
 
     <!-- ══ VISITS (Phase 7) ══ -->
@@ -679,6 +674,7 @@ function navigate(pageId) {
      on navigate ensures the chart SVG has real width to work with. */
   if (pageId === 'opportunities')    initOpportunitiesPage();
   if (pageId === 'funding-analysis') initFundingPage();
+  if (pageId === 'slack-intel')      initSlackIntelPage();
   if (pageId === 'team-pulse')       renderPulseChart();
   if (pageId === 'leave-tracker')    renderLeaveHeatmap();
 }
@@ -1377,7 +1373,14 @@ function renderNotificationPanel(panel) {
       </div>
     `).join('')}
     <div style="padding:10px 14px;font-size:var(--text-xs);color:var(--color-text-secondary);
-      text-align:center">Live alerts arrive in Phase 6 — Slack intelligence</div>
+      text-align:center;border-top:1px solid var(--color-border)">
+      <button onclick="navigate('slack-intel');panel.style.display='none'"
+        style="background:none;border:none;cursor:pointer;
+          color:var(--color-accent);font-size:var(--text-xs);
+          font-weight:500;padding:0;text-decoration:underline">
+        View all alerts in Slack intel →
+      </button>
+    </div>
   `;
 }
 
@@ -1391,6 +1394,265 @@ function updateNotifBadge() {
     badge.textContent = alerts.length;
     badge.style.display = alerts.length > 0 ? 'flex' : 'none';
   }
+}
+
+/* ════════════════════════════════════════
+   PHASE 6 — SLACK INTEL PAGE
+════════════════════════════════════════ */
+
+/* Demo Slack alerts — keyed by userId, falls back to 'default'.
+   In live mode these come from the slack-alerts Sheets tab via loadLiveData(). */
+const DEMO_SLACK_ALERTS = {
+  'u1': [ /* Country director */
+    { id:'sa1', type:'mention',     urgency:10, sector:'',            channel:'#nigeria-country',  sender:'Sarah Mensah',     timestamp:'10 min ago', text:'@Amaka can you confirm the Q3 country report is ready for review? Board meeting is Thursday.', read:false },
+    { id:'sa2', type:'deadline',    urgency: 8, sector:'',            channel:'#global-reporting', sender:'HQ Finance',       timestamp:'1 hr ago',   text:'Country reports due by end of day Friday. Nigeria team please confirm submission plan.', read:false },
+    { id:'sa3', type:'opportunity', urgency: 6, sector:'energy',      channel:'#opportunities',    sender:'Chidi Nwosu',      timestamp:'2 hrs ago',  text:'USAID Rural Energy RFP has been extended by 2 weeks — new deadline is Oct 14. Updating the pipeline tracker now.', read:false },
+    { id:'sa4', type:'meeting',     urgency: 4, sector:'',            channel:'#nigeria-country',  sender:'Global Calendar',  timestamp:'Yesterday',  text:'All-country directors sync is moved to Wednesday 3pm Lagos time. Dial-in details in the calendar invite.', read:true  },
+    { id:'sa5', type:'general',     urgency: 2, sector:'agriculture', channel:'#sector-agri',      sender:'GIZ Nigeria',      timestamp:'Yesterday',  text:'GIZ published new smallholder farmer data for north-west Nigeria — useful context for the pitch next month.', read:true  },
+  ],
+  'u2': [ /* Partnerships lead */
+    { id:'sa6', type:'opportunity', urgency:10, sector:'energy',      channel:'#opportunities',    sender:'USAID Nigeria',    timestamp:'5 min ago',  text:'URGENT: USAID Rural Energy technical evaluation panel confirmed for next Tuesday. Need capability statement by Monday 5pm.', read:false },
+    { id:'sa7', type:'mention',     urgency: 8, sector:'',            channel:'#partnerships',     sender:'Amaka Osei',       timestamp:'30 min ago', text:'@Chidi please review the AfDB Financial Inclusion concept note before EOD — Fatima has flagged a gap in the health component.', read:false },
+    { id:'sa8', type:'deadline',    urgency: 8, sector:'finance',     channel:'#opportunities',    sender:'AfDB Portal',      timestamp:'1 hr ago',   text:'AfDB Financial Inclusion concept note submission window opens Monday. Portal requires organisational profile upload first.', read:false },
+    { id:'sa9', type:'sector',      urgency: 4, sector:'health',      channel:'#sector-health',    sender:'Fatima Aliyu',     timestamp:'3 hrs ago',  text:'BMGF Health Systems team asked for a site visit in October — I have proposed Oct 8-10 and await their confirmation.', read:false },
+    { id:'sa10',type:'meeting',     urgency: 4, sector:'',            channel:'#nigeria-country',  sender:'Global Calendar',  timestamp:'Yesterday',  text:'Partnerships leads quarterly review — Thursday 10am. Nigeria please bring pipeline update and sector gap analysis.', read:true  },
+  ],
+  'u3': [ /* Health / WASH lead */
+    { id:'sa11',type:'sector',      urgency: 8, sector:'health',      channel:'#sector-health',    sender:'Fatima Aliyu',     timestamp:'1 hr ago',   text:'BMGF Health Systems site visit proposal sent — October window. Need your availability for 8-10 Oct please.', read:false },
+    { id:'sa12',type:'sector',      urgency: 6, sector:'wash',        channel:'#sector-wash',      sender:'World Bank NG',    timestamp:'2 hrs ago',  text:'World Bank WASH Phase 2 community validation session is confirmed for Sept 12. Transport arrangements needed.', read:false },
+    { id:'sa13',type:'general',     urgency: 2, sector:'health',      channel:'#global-health',    sender:'Global Health Team',timestamp:'Yesterday', text:'New WHO guidance on community health worker programmes published — relevant for the BMGF proposal evidence base.', read:true  },
+  ],
+  'default': [
+    { id:'sa14',type:'meeting',     urgency: 4, sector:'',            channel:'#nigeria-country',  sender:'Global Calendar',  timestamp:'1 hr ago',   text:'All-team sync tomorrow 10:00 AM Lagos time. Dial-in link in the shared calendar.', read:false },
+    { id:'sa15',type:'deadline',    urgency: 4, sector:'',            channel:'#global-reporting', sender:'HQ Finance',       timestamp:'3 hrs ago',  text:'Monthly country report due Friday. Please ensure all project updates are logged before Thursday.', read:false },
+    { id:'sa16',type:'general',     urgency: 2, sector:'',            channel:'#nigeria-country',  sender:'Amaka Osei',       timestamp:'Yesterday',  text:'Global team visiting in 12 days — check the visits tracker for the full itinerary and your assigned meetings.', read:true  },
+  ],
+};
+
+const SlackState = { alerts: [], lastFetched: null };
+
+function initSlackIntelPage() {
+  const container = document.getElementById('slack-intel-content');
+  if (!container) return;
+
+  const session = Session.get();
+  const userId  = session ? session.userId : null;
+
+  /* Get alerts for this user — live data preferred, demo fallback */
+  const alerts  = SlackState.alerts.length > 0
+    ? SlackState.alerts.filter(a => a.routedTo === userId || !a.routedTo)
+    : (DEMO_SLACK_ALERTS[userId] || DEMO_SLACK_ALERTS['default']);
+
+  const unread  = alerts.filter(a => !a.read).length;
+  const now     = SlackState.lastFetched
+    ? new Date(SlackState.lastFetched).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })
+    : 'demo data';
+
+  /* Type config */
+  const TYPE = {
+    mention:     { icon:'💬', label:'Mention',     badge:'badge-blue'  },
+    opportunity: { icon:'🎯', label:'Opportunity', badge:'badge-green' },
+    deadline:    { icon:'⏰', label:'Deadline',    badge:'badge-amber' },
+    meeting:     { icon:'📅', label:'Meeting',     badge:'badge-slate' },
+    sector:      { icon:'🔍', label:'Sector alert',badge:'badge-slate' },
+    general:     { icon:'📌', label:'Update',      badge:'badge-slate' },
+  };
+
+  /* Urgency border colour */
+  const urgencyBorder = u =>
+    u >= 8 ? '#dc2626' : u >= 5 ? '#d97706' : 'var(--color-border)';
+
+  /* Split alerts into unread and read */
+  const unreadAlerts = alerts.filter(a => !a.read);
+  const readAlerts   = alerts.filter(a => a.read);
+
+  /* Build alert card HTML */
+  const alertCard = (a, idx) => {
+    const t = TYPE[a.type] || TYPE.general;
+    return `
+      <div class="slack-alert-card" data-idx="${idx}"
+        style="
+          display:flex;gap:12px;align-items:flex-start;
+          padding:var(--space-4);
+          border-bottom:1px solid var(--color-border);
+          border-left:3px solid ${urgencyBorder(a.urgency)};
+          background:${a.read ? 'transparent' : 'var(--color-surface)'};
+          cursor:default;
+          transition:background .12s">
+
+        <!-- Icon -->
+        <div style="font-size:20px;flex-shrink:0;margin-top:1px">${t.icon}</div>
+
+        <!-- Content -->
+        <div style="flex:1;min-width:0">
+          <div style="
+            display:flex;align-items:center;gap:6px;
+            flex-wrap:wrap;margin-bottom:5px">
+            <span class="badge ${t.badge}" style="font-size:10px">${t.label}</span>
+            ${a.sector ? `<span class="badge badge-slate" style="font-size:10px">${a.sector}</span>` : ''}
+            ${!a.read ? `<span style="width:6px;height:6px;border-radius:50%;background:var(--color-accent);display:inline-block"></span>` : ''}
+          </div>
+          <div style="
+            font-size:var(--text-sm);
+            color:${a.read ? 'var(--color-text-secondary)' : 'var(--color-text-primary)'};
+            line-height:1.5;
+            margin-bottom:6px">
+            ${a.text}
+          </div>
+          <div style="
+            display:flex;gap:10px;align-items:center;
+            font-size:11px;color:var(--color-text-tertiary)">
+            <span>${a.sender}</span>
+            <span>·</span>
+            <span>${a.channel}</span>
+            <span>·</span>
+            <span>${a.timestamp}</span>
+          </div>
+        </div>
+
+        <!-- Urgency score -->
+        ${a.urgency >= 8 ? `
+          <div style="
+            flex-shrink:0;
+            background:#fef2f2;
+            color:#dc2626;
+            font-size:10px;font-weight:600;
+            padding:2px 7px;border-radius:4px;
+            white-space:nowrap">
+            Urgent
+          </div>` : ''}
+      </div>`;
+  };
+
+  container.innerHTML = `
+    <!-- Summary strip -->
+    <div style="
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
+      gap:var(--space-3);
+      margin-bottom:var(--space-5)">
+
+      <div style="padding:var(--space-3) var(--space-4);
+        background:var(--color-surface);
+        border:1px solid var(--color-border);
+        border-radius:var(--radius-md);
+        border-left:3px solid var(--color-accent)">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;
+          color:var(--color-text-secondary);margin-bottom:4px">Unread</div>
+        <div style="font-size:var(--text-xl);font-weight:700;
+          color:var(--color-text-primary)">${unread}</div>
+        <div style="font-size:10px;color:var(--color-text-tertiary)">new alerts</div>
+      </div>
+
+      <div style="padding:var(--space-3) var(--space-4);
+        background:var(--color-surface);
+        border:1px solid var(--color-border);
+        border-radius:var(--radius-md);
+        border-left:3px solid #dc2626">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;
+          color:var(--color-text-secondary);margin-bottom:4px">Urgent</div>
+        <div style="font-size:var(--text-xl);font-weight:700;color:#dc2626">
+          ${alerts.filter(a => a.urgency >= 8).length}
+        </div>
+        <div style="font-size:10px;color:var(--color-text-tertiary)">need action</div>
+      </div>
+
+      <div style="padding:var(--space-3) var(--space-4);
+        background:var(--color-surface);
+        border:1px solid var(--color-border);
+        border-radius:var(--radius-md);
+        border-left:3px solid #2e6843">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;
+          color:var(--color-text-secondary);margin-bottom:4px">Opportunities</div>
+        <div style="font-size:var(--text-xl);font-weight:700;color:#2e6843">
+          ${alerts.filter(a => a.type === 'opportunity').length}
+        </div>
+        <div style="font-size:10px;color:var(--color-text-tertiary)">signals</div>
+      </div>
+
+      <div style="padding:var(--space-3) var(--space-4);
+        background:var(--color-surface);
+        border:1px solid var(--color-border);
+        border-radius:var(--radius-md);
+        border-left:3px solid #64748b">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;
+          color:var(--color-text-secondary);margin-bottom:4px">Last synced</div>
+        <div style="font-size:var(--text-sm);font-weight:500;
+          color:var(--color-text-primary);margin-top:6px">${now}</div>
+        <div style="font-size:10px;color:var(--color-text-tertiary)">via Sheets</div>
+      </div>
+
+    </div>
+
+    <!-- Unread alerts -->
+    ${unreadAlerts.length > 0 ? `
+      <div class="card" style="margin-bottom:var(--space-4)">
+        <div class="card-header">
+          <div class="card-title">
+            New alerts
+            <span class="badge badge-amber" style="font-size:10px;margin-left:6px">
+              ${unreadAlerts.length}
+            </span>
+          </div>
+          <div class="card-subtitle">
+            Sorted by urgency — red border = urgent action needed
+          </div>
+        </div>
+        <div class="card-body" style="padding:0">
+          ${unreadAlerts
+            .sort((a,b) => b.urgency - a.urgency)
+            .map((a,i) => alertCard(a,i)).join('')}
+        </div>
+      </div>` : `
+      <div class="card" style="margin-bottom:var(--space-4)">
+        <div class="card-body" style="text-align:center;padding:var(--space-8)">
+          <div style="font-size:32px;margin-bottom:var(--space-3)">✓</div>
+          <div style="font-size:var(--text-base);font-weight:500;margin-bottom:4px">
+            All caught up
+          </div>
+          <div style="font-size:var(--text-sm);color:var(--color-text-secondary)">
+            No unread alerts for your role and expertise.
+          </div>
+        </div>
+      </div>`}
+
+    <!-- Read / older alerts -->
+    ${readAlerts.length > 0 ? `
+      <details>
+        <summary style="
+          font-size:var(--text-sm);font-weight:600;
+          color:var(--color-text-primary);
+          cursor:pointer;padding:var(--space-3) 0;
+          list-style:none;display:flex;align-items:center;gap:6px;
+          border-top:1px solid var(--color-border)">
+          <span>▸</span> Older alerts
+          <span style="font-size:var(--text-xs);font-weight:400;
+            color:var(--color-text-secondary)">
+            — ${readAlerts.length} read
+          </span>
+        </summary>
+        <div class="card" style="margin-top:var(--space-3)">
+          <div class="card-body" style="padding:0">
+            ${readAlerts.map((a,i) => alertCard(a, unreadAlerts.length + i)).join('')}
+          </div>
+        </div>
+      </details>` : ''}
+
+    <!-- Sync notice -->
+    <div style="
+      margin-top:var(--space-5);
+      padding:var(--space-3) var(--space-4);
+      background:var(--color-surface-2);
+      border-radius:var(--radius-md);
+      font-size:var(--text-xs);
+      color:var(--color-text-secondary)">
+      <strong style="color:var(--color-text-primary)">How this works:</strong>
+      Slack messages are read by the Apps Script sync engine, classified by
+      sector keyword, urgency-scored, and routed to team members based on
+      expertise tags. Syncs every 30 minutes.
+      ${SlackState.alerts.length === 0 ?
+        ' Showing demo alerts — configure <code>sync/slack-sync.gs</code> to go live.' : ''}
+    </div>`;
 }
 
 /* ════════════════════════════════════════
@@ -2252,6 +2514,9 @@ async function bootDashboard(session) {
   initOpportunitiesPage();
   initFundingPage();
 
+  /* Init Phase 6 pages */
+  initSlackIntelPage();
+
   /* Load live data asynchronously */
   loadLiveData(session);
 
@@ -2367,6 +2632,27 @@ async function loadLiveData(session) {
       }));
       initOpportunitiesPage();
       initFundingPage();
+    }
+
+    /* ── Phase 6: Slack alerts ── */
+    const slackData = await SheetsClient.get(SHEETS_CONFIG.TABS.SLACK_ALERTS);
+    if (slackData && slackData.length > 0) {
+      SlackState.alerts = slackData.map(row => ({
+        id:          row.id          || '',
+        text:        row.text        || '',
+        sector:      row.sector      || '',
+        urgency:     parseFloat(row.urgency) || 2,
+        type:        row.type        || 'general',
+        channel:     row.channel     || '',
+        sender:      row.sender      || '',
+        timestamp:   row.timestamp   || '',
+        routedTo:    row.routedTo    || '',
+        routedToName:row.routedToName|| '',
+        read:        row.read === 'true' || row.read === true,
+      }));
+      SlackState.lastFetched = new Date().toISOString();
+      initSlackIntelPage();
+      updateNotifBadge();
     }
 
     /* Update sync time display */
