@@ -1429,8 +1429,23 @@ function initTeamPulsePage() {
   });
 
   ExportToolbar.render('pulse-export-toolbar', {
-    title: 'Team Pulse',
-    getData: () => ExportToolbar.formatEventsForCSV(PulseState.events),
+    title:  'Team Pulse',
+    pageId: 'team-pulse',
+    getData: () => {
+      const src = PulseState.events.length > 0
+        ? PulseState.events
+        : (() => {
+            const DS = ChartBar.DAY_START, SPAN = ChartBar.DAY_END - ChartBar.DAY_START;
+            return DEMO_SCHEDULE.flatMap(p => p.bars.map(b => {
+              const lp = parseFloat(b.left) / 100, wp = parseFloat(b.width) / 100;
+              return { userName: p.name.replace('.',''), title: b.label, type: b.type,
+                startHour: Math.round((DS + lp * SPAN) * 10) / 10,
+                endHour:   Math.round((DS + (lp + wp) * SPAN) * 10) / 10,
+                date: PulseState.date };
+            }));
+          })();
+      return ExportToolbar.formatEventsForCSV(src);
+    },
   });
 
   updatePulseDate();
@@ -1477,19 +1492,47 @@ function renderPulseChart() {
 function renderPulseList() {
   const container = document.getElementById('pulse-list-view');
   if (!container) return;
-  const events = PulseState.events.filter(e => e.date === PulseState.date);
+
+  /* Use live events if available, else same demo fallback as the chart */
+  const DAY_START = ChartBar.DAY_START;
+  const DAY_SPAN  = ChartBar.DAY_END - ChartBar.DAY_START;
+  const allEvents = PulseState.events.length > 0
+    ? PulseState.events
+    : DEMO_SCHEDULE.flatMap(person =>
+        person.bars.map(b => {
+          const leftPct  = parseFloat(b.left)  / 100;
+          const widthPct = parseFloat(b.width) / 100;
+          return {
+            userId:       `demo_${person.initials}`,
+            userName:     person.name.replace('.',''),
+            userInitials: person.initials,
+            avatarColor:  person.color,
+            title:        b.label,
+            type:         b.type,
+            isLeave:      b.type === 'leave',
+            startHour:    Math.round((DAY_START + leftPct * DAY_SPAN) * 10) / 10,
+            endHour:      Math.round((DAY_START + (leftPct + widthPct) * DAY_SPAN) * 10) / 10,
+            date:         PulseState.date,
+          };
+        })
+      );
+
+  const events = allEvents.filter(e => e.date === PulseState.date || !e.date);
+
   if (events.length === 0) {
-    container.innerHTML = `<div class="coming-soon" style="padding:var(--space-8)">
+    container.innerHTML = `<div class="coming-soon" style="padding:var(--space-6)">
       <div class="coming-soon-icon">📅</div>
-      <div class="coming-soon-title">No calendar data yet</div>
-      <p>Configure Google Calendar sync to see live schedules.</p></div>`;
+      <div class="coming-soon-title">No events for this date</div>
+      <p>Navigate to a different date or sync Google Calendar data.</p></div>`;
     return;
   }
+
   const byUser = {};
   events.forEach(e => {
     if (!byUser[e.userId]) byUser[e.userId] = { name: e.userName, events: [] };
     byUser[e.userId].events.push(e);
   });
+
   container.innerHTML = Object.values(byUser).map(u => `
     <div class="card" style="margin-bottom:var(--space-3)">
       <div class="card-header">
@@ -1501,10 +1544,12 @@ function renderPulseList() {
           const col = ChartBar.COLOURS[e.type] || ChartBar.COLOURS.meeting;
           return `<div style="display:flex;align-items:center;gap:10px;
             padding:8px var(--space-5);border-bottom:1px solid var(--color-border)">
-            <div style="width:10px;height:10px;border-radius:2px;background:${col.fill};flex-shrink:0"></div>
+            <div style="width:10px;height:10px;border-radius:2px;
+              background:${col.fill};flex-shrink:0"></div>
             <div style="flex:1;font-size:var(--text-sm)">${e.title}</div>
             <div style="font-size:var(--text-xs);color:var(--color-text-secondary)">
-              ${ChartBar._fmtHour(e.startHour)} – ${ChartBar._fmtHour(e.endHour)}</div>
+              ${ChartBar._fmtHour(e.startHour)} – ${ChartBar._fmtHour(e.endHour)}
+            </div>
           </div>`;
         }).join('')}
       </div>
@@ -1515,6 +1560,48 @@ function renderPulseList() {
    PHASE 3 — LEAVE TRACKER PAGE
 ════════════════════════════════════════ */
 const LeaveState = { year: new Date().getFullYear(), month: new Date().getMonth(), records: [] };
+
+/* ── Seed demo leave data relative to current month ──
+   Generates realistic leave entries for the current and adjacent months
+   so the heatmap shows coloured cells in demo mode.
+── */
+(function seedDemoLeave() {
+  const now   = new Date();
+  const y     = now.getFullYear();
+  const m     = now.getMonth(); /* 0-based */
+  const pad   = n => String(n).padStart(2, '0');
+  const ymd   = (year, month, day) => `${year}-${pad(month + 1)}-${pad(day)}`;
+
+  LeaveState.records = [
+    /* Emeka — annual leave, days 3–7 of current month */
+    { id:'dl1', userId:'u4', userName:'Emeka Okonkwo',
+      type:'Annual leave',
+      startDate: ymd(y, m, 3),  endDate: ymd(y, m, 7),
+      durationDays: 5, status: 'approved' },
+    /* Fatima — sick leave, day 14 of current month (single day) */
+    { id:'dl2', userId:'u3', userName:'Fatima Aliyu',
+      type:'Sick leave',
+      startDate: ymd(y, m, 14), endDate: ymd(y, m, 14),
+      durationDays: 1, status: 'approved' },
+    /* Ngozi — annual leave, days 20–22 of current month */
+    { id:'dl3', userId:'u5', userName:'Ngozi Adeyemi',
+      type:'Annual leave',
+      startDate: ymd(y, m, 20), endDate: ymd(y, m, 22),
+      durationDays: 3, status: 'pending' },
+    /* Bola — leave next month days 5–9 */
+    { id:'dl4', userId:'u6', userName:'Bola Tunde',
+      type:'Annual leave',
+      startDate: ymd(y, m + 1 > 11 ? y + 1 : y, (m + 1) % 12, 5),
+      endDate:   ymd(y, m + 1 > 11 ? y + 1 : y, (m + 1) % 12, 9),
+      durationDays: 5, status: 'approved' },
+    /* Emeka — also next month day 15 */
+    { id:'dl5', userId:'u4', userName:'Emeka Okonkwo',
+      type:'Study leave',
+      startDate: ymd(y, m + 1 > 11 ? y + 1 : y, (m + 1) % 12, 15),
+      endDate:   ymd(y, m + 1 > 11 ? y + 1 : y, (m + 1) % 12, 15),
+      durationDays: 1, status: 'approved' },
+  ];
+})();
 
 function initLeaveTrackerPage() {
   const updateMonth = () => {
@@ -1557,8 +1644,11 @@ function initLeaveTrackerPage() {
   });
 
   ExportToolbar.render('leave-export-toolbar', {
-    title: 'Leave Tracker',
-    getData: () => ExportToolbar.formatLeaveForCSV(LeaveState.records),
+    title:  'Leave Tracker',
+    pageId: 'leave-tracker',
+    getData: () => ExportToolbar.formatLeaveForCSV(
+      LeaveState.records.length > 0 ? LeaveState.records : []
+    ),
   });
 
   updateMonth();
@@ -1614,7 +1704,8 @@ function renderLeaveList() {
 ════════════════════════════════════════ */
 function initRelationshipsPage() {
   ExportToolbar.render('rel-export-toolbar', {
-    title: 'Working Relationships',
+    title:  'Working Relationships',
+    pageId: 'relationships',
     getData: () => [],
   });
   renderRelationships([]);
