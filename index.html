@@ -1437,23 +1437,40 @@ function initTeamPulsePage() {
 }
 
 function renderPulseChart() {
+  const DAY_START = ChartBar.DAY_START; /* 7 */
+  const DAY_SPAN  = ChartBar.DAY_END - ChartBar.DAY_START; /* 13 */
+
   const events = PulseState.events.length > 0
     ? PulseState.events
     : DEMO_SCHEDULE.flatMap(person =>
-        person.bars.map(b => ({
-          userId: `demo_${person.initials}`, userName: person.name,
-          userInitials: person.initials, avatarColor: person.color,
-          title: b.label, type: b.type, isLeave: b.type === 'leave',
-          isAllDay: b.type === 'leave',
-          startHour: 7 + parseFloat(b.left) / 100 * 13,
-          endHour: 7 + (parseFloat(b.left) + parseFloat(b.width)) / 100 * 13,
-          date: PulseState.date,
-        }))
+        person.bars.map(b => {
+          /* Convert CSS percentage positions to real decimal hours.
+             DEMO_SCHEDULE left/width are % of the schedule bar width.
+             Map them linearly onto DAY_START → DAY_END (7am → 8pm = 13h). */
+          const leftPct  = parseFloat(b.left)  / 100;
+          const widthPct = parseFloat(b.width) / 100;
+          const startHour = DAY_START + leftPct  * DAY_SPAN;
+          const endHour   = DAY_START + (leftPct + widthPct) * DAY_SPAN;
+          return {
+            userId:       `demo_${person.initials}`,
+            userName:     person.name.replace('.', ''),
+            userInitials: person.initials,
+            avatarColor:  person.color,
+            title:        b.label,
+            type:         b.type,
+            isLeave:      b.type === 'leave',
+            isAllDay:     b.type === 'leave',
+            startHour:    Math.round(startHour * 10) / 10,
+            endHour:      Math.round(endHour   * 10) / 10,
+            date:         PulseState.date,
+          };
+        })
       );
+
   ChartBar.render('pulse-chart', events, { date: PulseState.date });
   document.getElementById('pulse-legend').innerHTML = ChartBar.legend();
   const syncTime = SheetsClient.lastSynced(SHEETS_CONFIG.TABS.CALENDAR_EVENTS);
-  const syncEl = document.getElementById('pulse-last-sync');
+  const syncEl   = document.getElementById('pulse-last-sync');
   if (syncEl) syncEl.textContent = syncTime || (PulseState.events.length === 0 ? 'using demo data' : 'just now');
 }
 
