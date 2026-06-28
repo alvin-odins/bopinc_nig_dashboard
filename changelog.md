@@ -5,7 +5,28 @@ Most recent changes appear first.
 
 ---
 
-## Phase 2 — Google Sheets data layer
+## Pre-Phase-3 polish — minor fixes and UX improvements
+*Status: ✅ Complete*
+
+**6 minor fixes**
+- `window.currentPage` scope — changed `let` to `window.currentPage` throughout `index.html` so `bottom-nav.js` reads the correct active page
+- Time-aware greeting — `getGreeting()` returns "Good morning / afternoon / evening" based on current hour; updates every minute alongside the pulse strip
+- Toast `pointer-events: none` added to container so invisible area does not block clicks; individual toasts keep `pointer-events: all`
+- Notification panel — `width:min(320px,calc(100vw - 24px))` prevents overflow on narrow screens; `right` reduced to 12px
+- Admin panel active nav — `document.querySelector('.admin-nav-btn').classList.add('active')` on init so Projects is highlighted on load
+- Schedule and `avail-dot` CSS moved from inline `<style>` block in `index.html` to `main.css`
+
+**6 UX improvements**
+- Projects page — proper empty state with "No projects yet" and "Add first project →" CTA instead of "Loading…" placeholder
+- Stat card skeleton loading — when Sheets is configured, stat values show a shimmer skeleton while live data loads; removed on arrival or error
+- Keyboard arrow navigation — `ArrowDown` / `ArrowUp` moves focus between sidebar nav items (ARIA nav landmark pattern)
+- `nav-item:focus-visible` — amber outline ring matches the active amber indicator; visible only for keyboard users
+- Stat cards — `role="button"` + `tabindex="0"` + `onkeydown` Enter/Space handler; `:active` press state and `:focus-visible` ring added
+- All `.btn` variants — `focus-visible` outline ring added to primary, secondary, and ghost for full keyboard accessibility
+
+**Files changed:** `index.html` · `src/styles/main.css` · `admin/data-manager.html`
+
+
 *Weeks 3–4 · Status: ✅ Complete*
 
 **What changed**
