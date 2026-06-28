@@ -138,9 +138,9 @@
 </head>
 <body>
 
-<!-- ── Dev banner (phase 1 only — remove before launch) ── -->
+<!-- ── Configuration notice (hidden when Sheets is configured) ── -->
 <div class="dev-banner" id="dev-banner">
-  Phase 1 shell — click your avatar (top right) to switch roles and test access control
+  Dashboard running in demo mode — <a href="docs/getting-started/03-first-time-setup.md" style="color:var(--amber-700);font-weight:500">configure Google Sheets</a> to see live data · <button onclick="document.getElementById('dev-banner').style.display='none'" style="background:none;border:none;cursor:pointer;color:var(--amber-700);font-size:var(--text-xs);padding:0;text-decoration:underline">dismiss</button>
 </div>
 
 <!-- ── Pulse strip — always visible country awareness bar ── -->
@@ -410,13 +410,15 @@
       <div class="page-header">
         <div class="page-eyebrow">Active work</div>
         <h1 class="page-title">Projects radar</h1>
-        <p class="page-subtitle">Ongoing projects — status, team members, timelines, and health scores.</p>
+        <p class="page-subtitle">Active projects — status, team, timelines, and health scores.</p>
       </div>
-      <div class="coming-soon">
-        <div class="coming-soon-icon" aria-hidden="true">📁</div>
-        <div class="coming-soon-title">Projects radar is coming</div>
-        <p>Live project cards with team member assignments, radar health charts, and export to PDF or Word.</p>
-        <span class="coming-soon-phase">Phase 2 — Weeks 3–4</span>
+      <div id="projects-list">
+        <!-- Populated by ProjectCard.renderAll() from Sheets data -->
+        <div class="coming-soon">
+          <div class="coming-soon-icon" aria-hidden="true">📁</div>
+          <div class="coming-soon-title">Loading projects…</div>
+          <p>Fetching project data from Google Sheets.</p>
+        </div>
       </div>
     </section>
 
@@ -495,10 +497,14 @@
 <!-- ── Scripts — order matters ── -->
 <script src="config/roles.js"></script>
 <script src="config/breakpoints.js"></script>
+<script src="config/sheets-config.js"></script>
 <script src="src/components/icons.js"></script>
 <script src="src/components/session.js"></script>
+<script src="src/components/sheets-client.js"></script>
+<script src="src/components/login.js"></script>
 <script src="src/components/bottom-nav.js"></script>
 <script src="src/components/change-request-modal.js"></script>
+<script src="src/components/project-card.js"></script>
 <script>
 
 /* ════════════════════════════════════════
@@ -678,20 +684,20 @@ function initSidebarToggle() {
 }
 
 /* ════════════════════════════════════════
-   ROLE SWITCHER (PHASE 1 DEMO)
+   ROLE SWITCHER (DEMO MODE ONLY)
    ════════════════════════════════════════ */
 function initRoleSwitcher() {
   const avatarBtn = document.getElementById('avatar-btn');
-  const switcher = document.getElementById('role-switcher');
-  const list = document.getElementById('role-switcher-list');
+  const switcher  = document.getElementById('role-switcher');
+  const list      = document.getElementById('role-switcher-list');
 
-  /* Populate list */
   function renderList() {
     const current = Session.get();
-    list.innerHTML = Session.getDemoUsers().map(user => `
+    const users   = Session.getDemoUsers();
+    list.innerHTML = users.map((user, idx) => `
       <button class="role-user-btn${current && current.userId === user.id ? ' current' : ''}"
-        onclick="switchUser('${user.id}')">
-        <div class="avatar avatar-sm avatar-${Session.getDemoUsers().indexOf(user) % 8}"
+        data-userid="${user.id}">
+        <div class="avatar avatar-sm avatar-${idx % 8}"
           aria-hidden="true">${user.initials}</div>
         <div>
           <div class="role-user-name">${user.name}</div>
@@ -702,6 +708,11 @@ function initRoleSwitcher() {
           : ''}
       </button>
     `).join('');
+
+    /* Wire clicks after rendering — avoids inline onclick with string arg */
+    list.querySelectorAll('.role-user-btn').forEach(btn => {
+      btn.addEventListener('click', () => switchUser(btn.dataset.userid));
+    });
   }
 
   avatarBtn.addEventListener('click', (e) => {
@@ -716,12 +727,21 @@ function initRoleSwitcher() {
 }
 
 function closeRoleSwitcher() {
-  document.getElementById('role-switcher').classList.remove('open');
-  document.getElementById('avatar-btn').setAttribute('aria-expanded', 'false');
+  const switcher = document.getElementById('role-switcher');
+  const avatarBtn = document.getElementById('avatar-btn');
+  if (switcher)  switcher.classList.remove('open');
+  if (avatarBtn) avatarBtn.setAttribute('aria-expanded', 'false');
 }
 
+/* switchUser — looks up full user object from DEMO_USERS before calling Session.set() */
 function switchUser(userId) {
-  const session = Session.set(userId);
+  const users   = Session.getDemoUsers();
+  const userObj = users.find(u => u.id === userId);
+  if (!userObj) {
+    console.warn('[switchUser] User not found:', userId);
+    return;
+  }
+  const session = Session.set(userObj);   /* pass full object — Session.set() expects this */
   updateHeaderUser(session);
   renderNav();
   renderRoleGatedContent();
@@ -1234,55 +1254,117 @@ function updateNotifBadge() {
   }
 }
 
+
 /* ════════════════════════════════════════
-   INIT
+   BOOT — called after login is confirmed
    ════════════════════════════════════════ */
-document.addEventListener('DOMContentLoaded', () => {
-  /* Init session */
-  const session = Session.get();
-
-  /* Update header */
+async function bootDashboard(session) {
   updateHeaderUser(session);
-
-  /* Pulse strip */
-  updatePulseStrip();
-  setInterval(updatePulseStrip, 60000);
-
-  /* Navigation */
   renderNav();
   renderRoleGatedContent();
-
-  /* Bottom nav (mobile) */
+  initSidebarToggle();
+  updatePulseStrip();
+  setInterval(updatePulseStrip, 60000);
   BottomNav.init();
 
-  /* Sidebar toggle */
-  initSidebarToggle();
+  /* Show role switcher only in demo mode */
+  const sheetsConfigured = SHEETS_CONFIG.DOCUMENT_ID !== 'PASTE_YOUR_SHEETS_ID_HERE';
+  if (!sheetsConfigured) initRoleSwitcher();
 
-  /* Role switcher */
-  initRoleSwitcher();
-
-  /* Home page content */
+  /* Home page content — render immediately from demo data */
   renderHomeSchedule();
   renderAvailability();
   renderActivityFeed();
   renderUpcoming();
   renderVisitCards();
 
-  /* Notification bell */
   initNotificationBell();
   updateNotifBadge();
-
-  /* Change request modal */
   ChangeRequest.init();
 
-  /* Handle initial URL hash */
   const hash = location.hash.replace('#', '');
   if (hash && hash !== 'home') navigate(hash);
 
-  /* Log load */
-  console.log('[BOPinc] Dashboard loaded — Phase 1 shell');
-  console.log('[BOPinc] Current user:', session.name, '|', ROLE_LABELS[session.role]);
+  /* Hide dev banner if Sheets is configured */
+  const banner = document.getElementById('dev-banner');
+  if (banner && sheetsConfigured) banner.style.display = 'none';
+
+  /* Load live data asynchronously */
+  loadLiveData(session);
+
+  console.log('[BOPinc] Dashboard booted — Phase 2');
+  console.log('[BOPinc] User:', session.name, '|', ROLE_LABELS[session.role]);
+  console.log('[BOPinc] Sheets configured:', sheetsConfigured);
+}
+
+/* ── Live data from Sheets ── */
+async function loadLiveData(session) {
+  try {
+    const roster = await Session.fetchRoster();
+    if (roster && roster.length > 0 && roster !== DEMO_USERS) {
+      const available = roster.filter(u => !u.status || u.status === 'available').length;
+      const statEl = document.getElementById('stat-available');
+      if (statEl) statEl.textContent = `${available}/${roster.length}`;
+    }
+
+    /* Projects */
+    const projects = await SheetsClient.get(SHEETS_CONFIG.TABS.PROJECTS);
+    const localProjects = JSON.parse(localStorage.getItem('bopinc_local_projects') || '[]');
+    const allProjects = [...(projects || []), ...localProjects];
+    if (allProjects.length > 0) {
+      ProjectCard.renderAll(allProjects, roster || []);
+      const active = allProjects.filter(p => p.status === 'active' || !p.status).length;
+      const statEl = document.getElementById('stat-projects');
+      if (statEl) statEl.textContent = active;
+    }
+
+    /* Visits */
+    const visits = await SheetsClient.get(SHEETS_CONFIG.TABS.VISITS);
+    const localVisits = JSON.parse(localStorage.getItem('bopinc_local_visits') || '[]');
+    const allVisits = [...(visits || []), ...localVisits];
+    if (allVisits.length > 0) {
+      const upcoming = allVisits
+        .map(v => ({ ...v, _days: SheetsClient.daysUntil(v.arrival) }))
+        .filter(v => v._days != null && v._days >= 0)
+        .sort((a, b) => a._days - b._days);
+      if (upcoming.length > 0) {
+        const next = upcoming[0];
+        const statEl = document.getElementById('stat-visit');
+        const metaEl = document.getElementById('stat-visit-meta');
+        if (statEl) statEl.textContent = `${next._days} days`;
+        if (metaEl) {
+          const visitors = SheetsClient.parseVisitors(next.visitorNames || '');
+          metaEl.textContent = `${visitors[0]?.country || ''} · ${visitors.length} ${visitors.length === 1 ? 'person' : 'people'}`;
+        }
+      }
+    }
+
+    /* Update sync time display */
+    const syncEl = document.getElementById('last-sync-time');
+    const syncTime = SheetsClient.lastSynced(SHEETS_CONFIG.TABS.TEAM_ROSTER);
+    if (syncEl && syncTime) syncEl.textContent = syncTime;
+
+  } catch (err) {
+    console.warn('[BOPinc] Live data load error:', err);
+  }
+}
+
+/* ════════════════════════════════════════
+   INIT
+   ════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', async () => {
+  const sheetsConfigured = SHEETS_CONFIG.DOCUMENT_ID !== 'PASTE_YOUR_SHEETS_ID_HERE';
+  const session = Session.get();
+
+  if (sheetsConfigured) {
+    const loggedIn = await Login.check();
+    if (!loggedIn) return;
+    bootDashboard(Session.get());
+  } else {
+    bootDashboard(session || Session.set({ ...DEMO_USERS[2] }));
+  }
 });
+
 
 </script>
 </body>
