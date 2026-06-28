@@ -5,7 +5,90 @@ Most recent changes appear first.
 
 ---
 
-## Pre-Phase-3 polish — minor fixes and UX improvements
+## Phase 5 — Opportunities pipeline, funding analysis, capacity gap engine
+*Weeks 9–10 · Status: ✅ Complete*
+
+**What changed**
+
+Two role-gated strategy pages — Opportunities and Funding Analysis — are now fully built. Both were previously showing "coming soon" placeholders. The capacity gap engine compares open opportunity sectors against team expertise and flags mismatches.
+
+**Added**
+- `src/components/chart-bubble.js` — SVG bubble chart: sector × probability, size = funding value, click-to-detail
+- `src/components/chart-stacked.js` — stacked horizontal bar chart for funding by sector and status
+- `docs/modules/opportunities.md` — data format guide, capacity gap explanation, Sheets column reference
+
+**Edited**
+- `index.html` — Phase 5 script tags added; DEMO_OPPORTUNITIES (8 entries); OppsState; initOpportunitiesPage(), renderOpportunitiesContent(), showOpportunityDetail(), renderCapacityGap(), initFundingPage() all implemented; renderRoleGatedContent() updated to call real renderers; loadLiveData() extended to load opportunities from Sheets; bootDashboard() wires both pages on init
+- `CHANGELOG.md` — this entry
+
+**Phase 5 features delivered:**
+1. Opportunities bubble chart — sector × probability, bubble size = funding value
+2. Status filter bar — All / Active / Pipeline / At risk / Won
+3. Click-to-detail panel — name, funder, sector, value, probability, deadline, description
+4. Capacity gap engine — compares opportunity sectors vs team expertise, flags gaps
+5. Funding analysis stacked bar — one row per sector, segmented by status
+6. Funding sector breakdown table — per-status values and totals
+7. Summary stat cards on both pages
+8. Export toolbar on both pages — CSV and PDF
+9. Live Sheets data loading for opportunities tab
+
+**Files changed: 5 (3 new, 2 edited)**
+**Total files: 49**
+
+## Phase 4 — Admin panel completion, roster management, audit log, password settings
+*Weeks 7–8 · Status: ✅ Complete*
+
+**What changed**
+
+The admin panel is now fully functional. Every section has add, edit, and delete capability. Approving a change request now automatically applies the correction to the underlying data. A new Settings section lets the director change the admin password without editing code. An audit log records every admin action.
+
+**Edited**
+- `admin/data-manager.html` — complete rewrite: project edit/delete, visit edit/delete, full roster management (add/edit/delete with form), change request apply-on-approve, audit log, Settings section with password management, dashboard information panel. Nav button added for Settings. `showSection()` wired to all six sections.
+- `admin/index.html` — password check now reads custom password from `localStorage` first, allowing the director to change it via the Settings panel without touching code.
+
+**Added**
+- `docs/modules/admin-panel.md` — complete guide to every admin section, all actions, security notes.
+
+**Phase 4 features delivered:**
+1. Project edit and delete — inline form pre-fill, confirmation on delete
+2. Visit edit and delete — same pattern as projects
+3. Full roster management — add, edit, remove team members with role/expertise/status/avatar colour
+4. Change request auto-apply — approving expertise, role, or availability corrections updates localStorage roster immediately
+5. Admin audit log — timestamped record of last 20 admin actions, viewable in Sync controls
+6. Password management — Settings section lets director set a custom password (minimum 12 chars) stored in localStorage
+7. Dashboard information panel — quick status of all configured components
+
+**Files changed: 3 (2 edited, 1 new)**
+**Total files: 47**
+
+
+*Weeks 5–6 · Status: ✅ Complete*
+
+**What changed**
+
+Google Calendar is now the live data source for team schedules and leave. Three Apps Script files handle the sync engine. Three dashboard pages — Team pulse, Leave tracker, and Relationships — are fully built and wired to live data. Demo data is used as a fallback when Sheets is not yet configured.
+
+**Added**
+- `sync/calendar-sync.gs` — reads team Google Calendars, classifies events (meeting/focus/leave/travel), writes to calendar-events and leave-records Sheets tabs
+- `sync/triggers.gs` — 30-min scheduled trigger, daily digest email to admin, error alerting
+- `sync/apps-script-api.gs` — HTTP web app endpoint for all dashboard write operations; handles append, update, and pending-changes queries
+- `src/components/chart-bar.js` — pure JS/SVG swimlane bar chart; date navigator; tooltip on hover; CSV export; no library dependency
+- `src/components/chart-heatmap.js` — monthly heatmap calendar; intensity colour coding; click-to-detail panel; month navigator
+- `src/components/export-toolbar.js` — reusable PDF/print, CSV download, and copy-link toolbar; attaches to any page
+- `docs/modules/calendar-sync.md` — full deploy guide, troubleshooting, and data flow explanation
+
+**Edited**
+- `index.html` — team-pulse page fully built (swimlane + list view + date nav + export); leave-tracker page fully built (heatmap + by-person list + month nav + export); relationships page fully built (collaboration map + stats); three Phase 3 script tags added; PulseState, LeaveState, initTeamPulsePage(), initLeaveTrackerPage(), initRelationshipsPage() added; loadLiveData() extended to load calendar-events and leave-records
+- `CHANGELOG.md` — this entry
+
+**Architecture decisions**
+- Chart components are pure JS/SVG — no external library (Chart.js, D3) needed. Reduces load time and eliminates CDN dependency.
+- DEMO_SCHEDULE is reused as the fallback data source for Team pulse when Sheets is not configured — zero visual regression in demo mode
+- PulseState and LeaveState are module-level objects that hold fetched data and current navigation state, keeping all three page functions stateless and re-renderable
+
+**Total files: 47**
+
+
 *Status: ✅ Complete*
 
 **6 minor fixes**
