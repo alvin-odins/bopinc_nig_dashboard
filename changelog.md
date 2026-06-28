@@ -5,6 +5,31 @@ Most recent changes appear first.
 
 ---
 
+## Phase 8 — Polish, print fix, demo data, docs, handover
+*Weeks 15–16 · Status: ✅ Complete*
+
+**What changed**
+
+Final polish pass across all files. Demo data updated to be always current. Print isolation fixed using JS DOM removal. Triggers updated to include Slack sync. README rewritten to final handover state.
+
+**Edited**
+- `index.html` — DEMO_VISITS dates now relative to today (always upcoming); `openVisitDetail` avatar colours pinned to visitor index; `renderRestrictedContent` fallback text updated, stale phase references removed
+- `sync/triggers.gs` — `runAllSyncs()` now calls `syncSlack()` — was missing since Phase 6
+- `src/components/export-toolbar.js` — print now uses JS DOM isolation: non-active pages temporarily removed from DOM before `window.print()` and restored after, resolving the second-page overflow that CSS-only approaches could not eliminate
+- `README.md` — complete rewrite: all 8 phases marked complete, Sheets setup, file structure, tech stack, admin password note, known issues
+- `CHANGELOG.md` — this entry
+
+**Phase 8 items delivered:**
+1. DEMO_VISITS — always-upcoming dates relative to today
+2. Avatar flicker fix — pinned to index not Math.random()
+3. Stale coming-soon phase text removed
+4. triggers.gs — syncSlack() added to runAllSyncs()
+5. Print fix — JS DOM isolation (detach / print / restore)
+6. README — final handover document
+
+**Files changed: 5 (0 new, 5 edited)**
+**Total files: 53 · All 8 phases complete.**
+
 ## Phase 7 — Visits timeline, global pipeline
 *Weeks 13–14 · Status: ✅ Complete*
 
