@@ -540,12 +540,7 @@
         <h1 class="page-title">Visits</h1>
         <p class="page-subtitle">Incoming and past visits from global team and cross-country colleagues.</p>
       </div>
-      <div class="coming-soon">
-        <div class="coming-soon-icon" aria-hidden="true">✈️</div>
-        <div class="coming-soon-title">Visits timeline is coming</div>
-        <p>Timeline carousel of upcoming visits (scroll right) and past visits (scroll left), anchored at today.</p>
-        <span class="coming-soon-phase">Phase 7 — Weeks 13–14</span>
-      </div>
+      <div id="visits-page-content"></div>
     </section>
 
     <!-- ══ OPPORTUNITIES (role-gated) ══ -->
@@ -573,10 +568,9 @@
       <div class="page-header">
         <div class="page-eyebrow">Strategy</div>
         <h1 class="page-title">Global pipeline</h1>
+        <p class="page-subtitle">BOPinc-wide funding opportunities across all country offices — restricted to partnerships lead and country director.</p>
       </div>
-      <div id="pipeline-content">
-        <!-- Populated by JS -->
-      </div>
+      <div id="pipeline-content"></div>
     </section>
 
   </main>
@@ -675,6 +669,8 @@ function navigate(pageId) {
   if (pageId === 'opportunities')    initOpportunitiesPage();
   if (pageId === 'funding-analysis') initFundingPage();
   if (pageId === 'slack-intel')      initSlackIntelPage();
+  if (pageId === 'visits')           initVisitsPage();
+  if (pageId === 'global-pipeline')  initGlobalPipelinePage();
   if (pageId === 'team-pulse')       renderPulseChart();
   if (pageId === 'leave-tracker')    renderLeaveHeatmap();
 }
@@ -933,11 +929,9 @@ function renderRestrictedContent(pageId) {
 }
 
 function renderRoleGatedContent() {
-  /* Phase 5 pages have full implementations — re-render on role switch */
   initOpportunitiesPage();
   initFundingPage();
-  /* Global pipeline still placeholder until Phase 7 */
-  renderRestrictedContent('global-pipeline');
+  initGlobalPipelinePage();
 }
 
 /* ════════════════════════════════════════
@@ -1394,6 +1388,493 @@ function updateNotifBadge() {
     badge.textContent = alerts.length;
     badge.style.display = alerts.length > 0 ? 'flex' : 'none';
   }
+}
+
+/* ════════════════════════════════════════
+   PHASE 7 — VISITS PAGE
+════════════════════════════════════════ */
+
+const VisitsState = { visits: [] };
+
+function initVisitsPage() {
+  const container = document.getElementById('visits-page-content');
+  if (!container) return;
+
+  /* Use live data if available, else demo */
+  const allVisits = VisitsState.visits.length > 0
+    ? VisitsState.visits
+    : DEMO_VISITS;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  /* Parse arrival/departure dates — handle both string and ISO formats */
+  const parseDate = str => {
+    if (!str) return null;
+    const d = new Date(str);
+    return isNaN(d) ? null : d;
+  };
+
+  /* Split into upcoming and past */
+  const upcoming = allVisits
+    .filter(v => {
+      const dep = parseDate(v.departure);
+      return dep && dep >= today;
+    })
+    .sort((a,b) => (parseDate(a.arrival)||0) - (parseDate(b.arrival)||0));
+
+  const past = allVisits
+    .filter(v => {
+      const dep = parseDate(v.departure);
+      return dep && dep < today;
+    })
+    .sort((a,b) => (parseDate(b.arrival)||0) - (parseDate(a.arrival)||0));
+
+  /* ── Visit card builder ── */
+  const visitCard = (visit, isPast) => {
+    const arrival   = parseDate(visit.arrival);
+    const departure = parseDate(visit.departure);
+    const daysUntil = arrival
+      ? Math.ceil((arrival - today) / 86400000)
+      : null;
+    const duration  = (arrival && departure)
+      ? Math.ceil((departure - arrival) / 86400000) + 1
+      : null;
+
+    /* Countdown label */
+    let countdown = '', countdownCol = 'var(--color-text-tertiary)';
+    if (!isPast && daysUntil !== null) {
+      if (daysUntil === 0)       { countdown = 'Arriving today';   countdownCol = '#2e6843'; }
+      else if (daysUntil === 1)  { countdown = 'Arriving tomorrow';countdownCol = '#d97706'; }
+      else if (daysUntil <= 7)   { countdown = `In ${daysUntil} days`; countdownCol = '#d97706'; }
+      else if (daysUntil <= 30)  { countdown = `In ${daysUntil} days`; }
+      else                       { countdown = `In ${daysUntil} days`; }
+    }
+
+    /* Visitor avatars — max 3 shown */
+    const shown   = visit.visitors.slice(0, 3);
+    const overflow= visit.visitors.length > 3 ? visit.visitors.length - 3 : 0;
+    const avatars = shown.map((v, i) => {
+      const initials = v.name.split(' ').map(n=>n[0]).join('').slice(0,2);
+      return `<div class="avatar avatar-${i % 8}" style="
+        width:32px;height:32px;font-size:11px;font-weight:600;
+        border:2px solid var(--color-surface);
+        border-radius:50%;display:flex;align-items:center;justify-content:center;
+        margin-left:${i > 0 ? '-8px' : '0'};flex-shrink:0;
+        ${isPast ? 'opacity:0.6' : ''}">
+        ${initials}
+      </div>`;
+    }).join('');
+
+    const purposeShort = (visit.purpose || '').length > 80
+      ? visit.purpose.slice(0, 79) + '…'
+      : (visit.purpose || '');
+
+    const dateStr = (arrival && departure)
+      ? `${arrival.toLocaleDateString('en-GB',{day:'numeric',month:'short'})} – ${departure.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}`
+      : visit.arrival || '';
+
+    return `
+      <div style="
+        background:var(--color-surface);
+        border:1px solid var(--color-border);
+        border-radius:var(--radius-lg);
+        padding:var(--space-4) var(--space-5);
+        ${isPast ? 'opacity:0.75' : ''}
+        cursor:pointer;
+        transition:box-shadow .15s,transform .1s"
+        onclick="openVisitDetail(${JSON.stringify(visit).replace(/"/g,'&quot;')})"
+        onmouseenter="this.style.boxShadow='var(--shadow-md)';this.style.transform='translateY(-1px)'"
+        onmouseleave="this.style.boxShadow='';this.style.transform=''">
+
+        <!-- Header row -->
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;
+          gap:var(--space-3);margin-bottom:var(--space-3)">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:var(--text-base);font-weight:600;
+              color:var(--color-text-primary);margin-bottom:3px">
+              ${visit.visitors[0].name.split(' ')[0]}'s visit
+              ${visit.visitors.length > 1 ? `<span style="font-size:var(--text-sm);font-weight:400;
+                color:var(--color-text-secondary)">+ ${visit.visitors.length - 1} more</span>` : ''}
+            </div>
+            <div style="font-size:var(--text-xs);color:var(--color-text-tertiary)">
+              ${dateStr}
+              ${duration ? ` · ${duration} day${duration !== 1 ? 's' : ''}` : ''}
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+            ${!isPast && countdown ? `
+              <span style="font-size:11px;font-weight:500;color:${countdownCol};
+                white-space:nowrap">${countdown}</span>` : ''}
+            ${isPast ? `
+              <span class="badge badge-slate" style="font-size:10px">Past</span>` : `
+              <span class="badge badge-green" style="font-size:10px">Upcoming</span>`}
+          </div>
+        </div>
+
+        <!-- Avatar stack + purpose -->
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:var(--space-3)">
+          <div style="display:flex;align-items:center;flex-shrink:0">
+            ${avatars}
+            ${overflow ? `<div style="
+              width:32px;height:32px;border-radius:50%;
+              background:var(--color-surface-2);
+              border:2px solid var(--color-surface);
+              display:flex;align-items:center;justify-content:center;
+              font-size:10px;font-weight:500;
+              color:var(--color-text-secondary);
+              margin-left:-8px">
+              +${overflow}
+            </div>` : ''}
+          </div>
+          <div style="font-size:var(--text-sm);color:var(--color-text-secondary);
+            flex:1;min-width:0;line-height:1.4">
+            ${purposeShort}
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="display:flex;align-items:center;justify-content:space-between;
+          padding-top:var(--space-3);border-top:1px solid var(--color-border)">
+          <div style="font-size:11px;color:var(--color-text-secondary)">
+            Contact:
+            <strong style="color:var(--color-text-primary)">${visit.assignedContact || '—'}</strong>
+          </div>
+          <div style="font-size:11px;color:var(--color-text-tertiary)">
+            ${visit.visitors[0].country}
+            ${visit.visitors.length > 1 ? `+ ${visit.visitors.length - 1}` : ''}
+          </div>
+        </div>
+
+      </div>`;
+  };
+
+  /* ── Summary stats ── */
+  const totalVisitors = allVisits.reduce((s,v) => s + (v.visitors||[]).length, 0);
+  const nextVisit     = upcoming[0];
+  const daysToNext    = nextVisit && parseDate(nextVisit.arrival)
+    ? Math.ceil((parseDate(nextVisit.arrival) - today) / 86400000)
+    : null;
+
+  container.innerHTML = `
+    <!-- Export toolbar -->
+    <div id="visits-export-toolbar" style="margin-bottom:var(--space-4)"></div>
+
+    <!-- Stats -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
+      gap:var(--space-3);margin-bottom:var(--space-5)">
+
+      <div style="padding:var(--space-3) var(--space-4);background:var(--color-surface);
+        border:1px solid var(--color-border);border-radius:var(--radius-md);
+        border-left:3px solid var(--color-accent)">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;
+          color:var(--color-text-secondary);margin-bottom:4px">Upcoming</div>
+        <div style="font-size:var(--text-xl);font-weight:700;
+          color:var(--color-text-primary)">${upcoming.length}</div>
+        <div style="font-size:10px;color:var(--color-text-tertiary)">visits planned</div>
+      </div>
+
+      <div style="padding:var(--space-3) var(--space-4);background:var(--color-surface);
+        border:1px solid var(--color-border);border-radius:var(--radius-md);
+        border-left:3px solid #d97706">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;
+          color:var(--color-text-secondary);margin-bottom:4px">Next visit</div>
+        <div style="font-size:var(--text-xl);font-weight:700;color:#d97706">
+          ${daysToNext !== null ? (daysToNext === 0 ? 'Today' : `${daysToNext}d`) : '—'}
+        </div>
+        <div style="font-size:10px;color:var(--color-text-tertiary)">
+          ${nextVisit ? nextVisit.visitors[0].name.split(' ')[0] : 'none scheduled'}
+        </div>
+      </div>
+
+      <div style="padding:var(--space-3) var(--space-4);background:var(--color-surface);
+        border:1px solid var(--color-border);border-radius:var(--radius-md);
+        border-left:3px solid #64748b">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;
+          color:var(--color-text-secondary);margin-bottom:4px">Total visitors</div>
+        <div style="font-size:var(--text-xl);font-weight:700;
+          color:var(--color-text-primary)">${totalVisitors}</div>
+        <div style="font-size:10px;color:var(--color-text-tertiary)">across all visits</div>
+      </div>
+
+      <div style="padding:var(--space-3) var(--space-4);background:var(--color-surface);
+        border:1px solid var(--color-border);border-radius:var(--radius-md);
+        border-left:3px solid #2e6843">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;
+          color:var(--color-text-secondary);margin-bottom:4px">Countries</div>
+        <div style="font-size:var(--text-xl);font-weight:700;color:#2e6843">
+          ${new Set(allVisits.flatMap(v => v.visitors.map(p => p.country))).size}
+        </div>
+        <div style="font-size:10px;color:var(--color-text-tertiary)">represented</div>
+      </div>
+
+    </div>
+
+    <!-- Upcoming visits -->
+    ${upcoming.length > 0 ? `
+      <div style="margin-bottom:var(--space-5)">
+        <div style="font-size:var(--text-sm);font-weight:600;
+          color:var(--color-text-primary);margin-bottom:var(--space-3);
+          display:flex;align-items:center;gap:8px">
+          Upcoming visits
+          <span class="badge badge-green" style="font-size:10px">${upcoming.length}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+          gap:var(--space-4)">
+          ${upcoming.map(v => visitCard(v, false)).join('')}
+        </div>
+      </div>` : `
+      <div class="card" style="margin-bottom:var(--space-5)">
+        <div class="card-body" style="text-align:center;padding:var(--space-8)">
+          <div style="font-size:32px;margin-bottom:var(--space-3)">✈️</div>
+          <div style="font-size:var(--text-base);font-weight:500;margin-bottom:4px">
+            No upcoming visits
+          </div>
+          <div style="font-size:var(--text-sm);color:var(--color-text-secondary)">
+            Add visits via Admin panel → Visits to see them here.
+          </div>
+        </div>
+      </div>`}
+
+    <!-- Past visits (collapsible) -->
+    ${past.length > 0 ? `
+      <details>
+        <summary style="
+          font-size:var(--text-sm);font-weight:600;
+          color:var(--color-text-primary);
+          cursor:pointer;padding:var(--space-3) 0;
+          list-style:none;display:flex;align-items:center;gap:6px;
+          border-top:1px solid var(--color-border)">
+          <span>▸</span> Past visits
+          <span style="font-size:var(--text-xs);font-weight:400;
+            color:var(--color-text-secondary)">— ${past.length} recorded</span>
+        </summary>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+          gap:var(--space-4);margin-top:var(--space-3)">
+          ${past.map(v => visitCard(v, true)).join('')}
+        </div>
+      </details>` : ''}
+
+    <!-- Add visit prompt -->
+    <div style="margin-top:var(--space-5);padding:var(--space-3) var(--space-4);
+      background:var(--color-surface-2);border-radius:var(--radius-md);
+      font-size:var(--text-xs);color:var(--color-text-secondary)">
+      <strong style="color:var(--color-text-primary)">Managing visits:</strong>
+      Add and edit visits via
+      <a href="admin/data-manager.html" style="color:var(--color-accent)">
+        Admin panel → Visits
+      </a>.
+      Visits are stored in localStorage and sync to Google Sheets when configured.
+      ${VisitsState.visits.length === 0 ? ' Showing demo visits.' : ''}
+    </div>`;
+
+  /* Export toolbar */
+  ExportToolbar.render('visits-export-toolbar', {
+    title:  'Visits',
+    pageId: 'visits',
+    getData: () => allVisits.map(v => ({
+      'Visitor':          v.visitors.map(p => p.name).join(', '),
+      'Roles':            v.visitors.map(p => p.role).join(', '),
+      'Countries':        v.visitors.map(p => p.country).join(', '),
+      'Arrival':          v.arrival,
+      'Departure':        v.departure,
+      'Purpose':          v.purpose,
+      'Assigned contact': v.assignedContact,
+      'Notes':            v.notes,
+    })),
+  });
+}
+
+/* ════════════════════════════════════════
+   PHASE 7 — GLOBAL PIPELINE PAGE
+════════════════════════════════════════ */
+
+const GlobalPipelineState = { data: [] };
+
+/* Demo global pipeline — cross-country opportunities by country office */
+const DEMO_GLOBAL_PIPELINE = [
+  { country:'Nigeria',     sector:'Energy',      value:2500000, status:'active',   label:'USAID Rural Energy'        },
+  { country:'Nigeria',     sector:'Finance',     value:4100000, status:'pipeline', label:'AfDB Financial Inclusion'  },
+  { country:'Nigeria',     sector:'WASH',        value:3200000, status:'active',   label:'World Bank WASH II'        },
+  { country:'Ghana',       sector:'Agriculture', value:3800000, status:'active',   label:'IFAD Smallholder'          },
+  { country:'Ghana',       sector:'Energy',      value:1900000, status:'pipeline', label:'UKAID Solar Access'        },
+  { country:'Kenya',       sector:'Health',      value:5200000, status:'active',   label:'GAVI Health Systems'       },
+  { country:'Kenya',       sector:'Education',   value:2100000, status:'at-risk',  label:'FCDO Girls Ed'             },
+  { country:'Ethiopia',    sector:'Agriculture', value:4400000, status:'active',   label:'World Bank Agriculture'    },
+  { country:'Ethiopia',    sector:'WASH',        value:1700000, status:'pipeline', label:'UNICEF WASH'               },
+  { country:'Senegal',     sector:'Livelihoods', value:2900000, status:'active',   label:'EU Enterprise'             },
+  { country:'Senegal',     sector:'Gender',      value:1200000, status:'pipeline', label:'UN Women'                  },
+  { country:'Rwanda',      sector:'Finance',     value:3500000, status:'active',   label:'AfDB Mobile Finance'       },
+];
+
+function initGlobalPipelinePage() {
+  const container = document.getElementById('pipeline-content');
+  if (!container) return;
+
+  const session = Session.get();
+  const role    = session ? session.role : ROLES.TEAM_MEMBER;
+
+  if (!canAccess('global-pipeline', role)) {
+    container.innerHTML = `<div class="restricted">
+      <div class="restricted-icon">${getIcon('lock', 40)}</div>
+      <div class="restricted-title">Access restricted</div>
+      <p class="restricted-body">Global pipeline is available to the partnerships lead and country director.</p>
+    </div>`;
+    return;
+  }
+
+  const data   = GlobalPipelineState.data.length > 0
+    ? GlobalPipelineState.data
+    : DEMO_GLOBAL_PIPELINE;
+
+  const fmtVal = v => v >= 1000000 ? `$${(v/1000000).toFixed(1)}M` : `$${(v/1000).toFixed(0)}K`;
+  const total  = data.reduce((s,d) => s+(parseFloat(d.value)||0), 0);
+  const countries = [...new Set(data.map(d => d.country))].sort();
+
+  /* Build stacked chart data — one row per country */
+  const stackedData = countries.map(country => {
+    const rows    = data.filter(d => d.country === country);
+    const statuses= ['active','pipeline','at-risk'];
+    const segments= statuses
+      .map(s => ({
+        status: s,
+        value:  rows.filter(d => d.status === s).reduce((sum,d)=>sum+(parseFloat(d.value)||0),0),
+      }))
+      .filter(s => s.value > 0);
+    return { label: country, segments };
+  });
+
+  /* Country totals for table */
+  const countryTotals = countries.map(country => {
+    const rows      = data.filter(d => d.country === country);
+    const total     = rows.reduce((s,d) => s+(parseFloat(d.value)||0), 0);
+    const active    = rows.filter(d => d.status === 'active').reduce((s,d)=>s+(parseFloat(d.value)||0),0);
+    const pipeline  = rows.filter(d => d.status === 'pipeline').reduce((s,d)=>s+(parseFloat(d.value)||0),0);
+    return { country, total, active, pipeline, count: rows.length };
+  }).sort((a,b) => b.total - a.total);
+
+  container.innerHTML = `
+    <!-- Export toolbar -->
+    <div id="global-pipeline-export-toolbar" style="margin-bottom:var(--space-4)"></div>
+
+    <!-- Summary stats -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
+      gap:var(--space-3);margin-bottom:var(--space-5)">
+
+      <div style="padding:var(--space-3) var(--space-4);background:var(--color-surface);
+        border:1px solid var(--color-border);border-radius:var(--radius-md);
+        border-left:3px solid var(--color-accent)">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;
+          color:var(--color-text-secondary);margin-bottom:4px">Global pipeline</div>
+        <div style="font-size:var(--text-xl);font-weight:700;
+          color:var(--color-text-primary)">${fmtVal(total)}</div>
+        <div style="font-size:10px;color:var(--color-text-tertiary)">${data.length} opportunities</div>
+      </div>
+
+      <div style="padding:var(--space-3) var(--space-4);background:var(--color-surface);
+        border:1px solid var(--color-border);border-radius:var(--radius-md);
+        border-left:3px solid #2e6843">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;
+          color:var(--color-text-secondary);margin-bottom:4px">Active</div>
+        <div style="font-size:var(--text-xl);font-weight:700;color:#2e6843">
+          ${fmtVal(data.filter(d=>d.status==='active').reduce((s,d)=>s+(parseFloat(d.value)||0),0))}
+        </div>
+        <div style="font-size:10px;color:var(--color-text-tertiary)">
+          ${data.filter(d=>d.status==='active').length} active
+        </div>
+      </div>
+
+      <div style="padding:var(--space-3) var(--space-4);background:var(--color-surface);
+        border:1px solid var(--color-border);border-radius:var(--radius-md);
+        border-left:3px solid #1d4ed8">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;
+          color:var(--color-text-secondary);margin-bottom:4px">Countries</div>
+        <div style="font-size:var(--text-xl);font-weight:700;color:#1d4ed8">
+          ${countries.length}
+        </div>
+        <div style="font-size:10px;color:var(--color-text-tertiary)">offices tracked</div>
+      </div>
+
+      <div style="padding:var(--space-3) var(--space-4);background:var(--color-surface);
+        border:1px solid var(--color-border);border-radius:var(--radius-md);
+        border-left:3px solid #d97706">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;
+          color:var(--color-text-secondary);margin-bottom:4px">Nigeria share</div>
+        <div style="font-size:var(--text-xl);font-weight:700;color:#d97706">
+          ${Math.round((data.filter(d=>d.country==='Nigeria').reduce((s,d)=>s+(parseFloat(d.value)||0),0)/total)*100)}%
+        </div>
+        <div style="font-size:10px;color:var(--color-text-tertiary)">of global total</div>
+      </div>
+
+    </div>
+
+    <!-- Stacked bar chart by country -->
+    <div class="card" style="margin-bottom:var(--space-4)">
+      <div class="card-header">
+        <div class="card-title">Pipeline by country office</div>
+        <div class="card-subtitle">Stacked by status — active, pipeline, at risk</div>
+      </div>
+      <div class="card-body">
+        <div id="global-pipeline-chart"></div>
+      </div>
+    </div>
+
+    <!-- Country breakdown table -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Country breakdown</div>
+        <div class="card-subtitle">Sorted by total pipeline value</div>
+      </div>
+      <div class="card-body" style="padding:0">
+        ${countryTotals.map(c => `
+          <div style="display:flex;align-items:center;gap:12px;
+            padding:10px var(--space-5);
+            border-bottom:1px solid var(--color-border)">
+            <div style="flex:1">
+              <div style="font-size:var(--text-sm);font-weight:600;
+                color:var(--color-text-primary)">
+                ${c.country}
+                ${c.country === 'Nigeria' ? `<span style="font-size:10px;font-weight:400;
+                  color:var(--color-accent);margin-left:4px">← your office</span>` : ''}
+              </div>
+              <div style="font-size:var(--text-xs);color:var(--color-text-secondary);margin-top:1px">
+                ${c.count} opportunit${c.count!==1?'ies':'y'}
+              </div>
+            </div>
+            <div style="font-size:var(--text-xs);color:var(--color-text-secondary);text-align:right">
+              <div style="color:#2e6843;font-weight:500">${fmtVal(c.active)} active</div>
+              <div style="color:#1d4ed8">${fmtVal(c.pipeline)} pipeline</div>
+            </div>
+            <div style="font-size:var(--text-sm);font-weight:700;
+              color:var(--color-text-primary);min-width:60px;text-align:right">
+              ${fmtVal(c.total)}
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    ${GlobalPipelineState.data.length === 0 ? `
+      <div style="margin-top:var(--space-4);padding:var(--space-3) var(--space-4);
+        background:var(--color-surface-2);border-radius:var(--radius-md);
+        font-size:var(--text-xs);color:var(--color-text-secondary)">
+        Showing demo data. Connect the <code>global-pipeline</code> Sheets tab to see live cross-country data.
+      </div>` : ''}`;
+
+  /* Render stacked chart */
+  ChartStacked.render('global-pipeline-chart', stackedData, { currency: true });
+
+  /* Export toolbar */
+  ExportToolbar.render('global-pipeline-export-toolbar', {
+    title:  'Global Pipeline',
+    pageId: 'global-pipeline',
+    getData: () => data.map(d => ({
+      'Country':  d.country,
+      'Sector':   d.sector,
+      'Opportunity': d.label,
+      'Value':    d.value,
+      'Status':   d.status,
+    })),
+  });
 }
 
 /* ════════════════════════════════════════
@@ -2517,6 +2998,10 @@ async function bootDashboard(session) {
   /* Init Phase 6 pages */
   initSlackIntelPage();
 
+  /* Init Phase 7 pages */
+  initVisitsPage();
+  initGlobalPipelinePage();
+
   /* Load live data asynchronously */
   loadLiveData(session);
 
@@ -2632,6 +3117,43 @@ async function loadLiveData(session) {
       }));
       initOpportunitiesPage();
       initFundingPage();
+    }
+
+    /* ── Phase 7: Visits ── */
+    const visitsData = await SheetsClient.get(SHEETS_CONFIG.TABS.VISITS);
+    if (visitsData && visitsData.length > 0) {
+      VisitsState.visits = visitsData.map(row => ({
+        id:              row.id              || '',
+        visitors:        (row.visitorNames   || '').split(',').map((n,i) => ({
+          name:    n.trim(),
+          role:    (row.visitorRoles    || '').split(',')[i]?.trim()    || '',
+          country: (row.visitorCountries|| '').split(',')[i]?.trim()    || '',
+        })),
+        arrival:         row.arrival         || '',
+        departure:       row.departure       || '',
+        purpose:         row.purpose         || '',
+        assignedContact: row.assignedContact  || '',
+        appointments:    (row.appointments   || '').split(';').map(a => {
+          const [date, ...rest] = a.trim().split(':');
+          return { date: date?.trim() || '', desc: rest.join(':').trim() };
+        }).filter(a => a.date),
+        notes:           row.notes           || '',
+        status:          row.status          || 'upcoming',
+      }));
+      initVisitsPage();
+    }
+
+    /* ── Phase 7: Global pipeline ── */
+    const globalData = await SheetsClient.get(SHEETS_CONFIG.TABS.GLOBAL_PIPELINE);
+    if (globalData && globalData.length > 0) {
+      GlobalPipelineState.data = globalData.map(row => ({
+        country: row.country || '',
+        sector:  row.sector  || '',
+        value:   parseFloat(row.value) || 0,
+        status:  row.status  || 'pipeline',
+        label:   row.name    || row.label || '',
+      }));
+      initGlobalPipelinePage();
     }
 
     /* ── Phase 6: Slack alerts ── */

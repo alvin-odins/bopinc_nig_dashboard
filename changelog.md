@@ -5,6 +5,34 @@ Most recent changes appear first.
 
 ---
 
+## Phase 7 — Visits timeline, global pipeline
+*Weeks 13–14 · Status: ✅ Complete*
+
+**What changed**
+
+Two final content pages are now fully built. Visits replaces the coming-soon placeholder with a timeline of upcoming and past visits. Global pipeline shows BOPinc-wide funding opportunities across country offices using the existing ChartStacked component.
+
+**Added**
+- `docs/modules/visits.md` — visits setup guide, Sheets tab format, global pipeline data format
+
+**Edited**
+- `index.html` — `VisitsState`, `GlobalPipelineState`, `DEMO_GLOBAL_PIPELINE` (12 cross-country opportunities); `initVisitsPage()` — full visits timeline: stat strip, upcoming visit cards with avatar stack, countdown, past visits collapsible; `initGlobalPipelinePage()` — full global pipeline: stat strip, ChartStacked by country, country breakdown table; `navigate()` wired for visits and global-pipeline; `bootDashboard()` calls both; `loadLiveData()` extended for VISITS and GLOBAL_PIPELINE tabs; `renderRoleGatedContent()` now calls `initGlobalPipelinePage()`
+- `CHANGELOG.md` — this entry
+
+**Phase 7 features delivered:**
+1. Visits timeline — upcoming cards with countdown, visitor avatars, assigned contact
+2. Past visits — collapsed expandable section, dimmed cards
+3. Visits summary stats — upcoming count, days to next, total visitors, countries
+4. Export toolbar on visits page — CSV of all visit data
+5. Global pipeline stacked bar chart — one row per country, segmented by status
+6. Country breakdown table — sorted by total value, Nigeria highlighted
+7. Global pipeline summary stats — total, active, countries, Nigeria share
+8. Export toolbar on global pipeline — CSV of all cross-country opportunities
+9. Live Sheets loading for VISITS and GLOBAL_PIPELINE tabs
+
+**Files changed: 3 (1 new, 2 edited)**
+**Total files: 53**
+
 ## Phase 6 — Slack intelligence, sector routing, urgency scoring
 *Weeks 11–12 · Status: ✅ Complete*
 
