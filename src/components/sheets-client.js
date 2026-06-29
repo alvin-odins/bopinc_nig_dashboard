@@ -49,7 +49,7 @@ const SheetsClient = {
 
     /* Build request */
     const apiKey = (typeof SECRETS !== 'undefined') ? SECRETS.SHEETS_API_KEY : '';
-    if (!apiKey || apiKey === 'YOUR_GOOGLE_SHEETS_API_KEY_HERE') {
+    if (!apiKey || apiKey === 'A]IzaSyA8S_4BEGIu6zXXlhI1MQCpZfPcP-9eMjk') {
       console.warn('[SheetsClient] API key not configured — returning empty array for', tabName);
       return [];
     }
