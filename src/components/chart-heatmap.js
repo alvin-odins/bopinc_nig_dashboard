@@ -261,4 +261,4 @@ const ChartHeatmap = {
   _esc(str) {
     return (str || '').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   },
-};git
+};

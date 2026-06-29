@@ -2506,10 +2506,15 @@ function renderCapacityGap(opps) {
   const container = document.getElementById('capacity-gap-container');
   if (!container) return;
 
-  /* Get team expertise from roster */
+  /* Get team expertise from roster — expertise may be a string or array */
   const roster  = JSON.parse(localStorage.getItem('bopinc_local_roster') || '[]');
   const allExpertise = roster.length > 0
-    ? roster.flatMap(m => (m.expertise || '').split(',').map(e => e.trim().toLowerCase()))
+    ? roster.flatMap(m => {
+        const exp = m.expertise || '';
+        return Array.isArray(exp)
+          ? exp.map(e => e.trim().toLowerCase())
+          : exp.split(',').map(e => e.trim().toLowerCase());
+      })
     : ['energy','agriculture','health','wash','strategy','partnerships','finance','monitoring'];
 
   /* Sectors with active/pipeline opportunities */
