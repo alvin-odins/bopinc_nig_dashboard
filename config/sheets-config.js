@@ -8,7 +8,7 @@
 const SHEETS_CONFIG = {
 
   /* ── Document ID ── */
-  DOCUMENT_ID: 'PASTE_YOUR_SHEETS_ID_HERE',
+  DOCUMENT_ID: '1TwaXMke4ZOMYiUoQjO2QxvufdUMq8sih5VtBLBKkvsg',
 
   /* ── API base URL (constructed at runtime) ── */
   get BASE_URL() {
