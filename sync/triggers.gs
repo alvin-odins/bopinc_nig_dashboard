@@ -41,14 +41,21 @@ function setupTriggers() {
 function runAllSyncs() {
   const start = Date.now();
   const errors = [];
-  
+
   try {
     syncAll(); /* from calendar-sync.gs */
   } catch (err) {
     errors.push(`Calendar sync: ${err.message}`);
     Logger.log(`[Triggers] Calendar sync error: ${err.message}`);
   }
-  
+
+  try {
+    syncSlack(); /* from slack-sync.gs — added Phase 6 */
+  } catch (err) {
+    errors.push(`Slack sync: ${err.message}`);
+    Logger.log(`[Triggers] Slack sync error: ${err.message}`);
+  }
+
   const elapsed = ((Date.now() - start) / 1000).toFixed(1);
   Logger.log(`[Triggers] All syncs complete in ${elapsed}s. Errors: ${errors.length}`);
   
