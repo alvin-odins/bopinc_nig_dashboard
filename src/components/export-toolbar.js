@@ -65,41 +65,50 @@ const ExportToolbar = {
 
   /* ── Wire button events ── */
   _wire(id, options) {
-    /* PDF / Print */
+    /* PDF / Print — JS DOM isolation approach.
+       Temporarily detaches all non-active .page elements from the DOM
+       before calling window.print(), so the browser has no hidden pages
+       to include in its layout calculation. Restores them after.
+       This resolves the second-page overflow that CSS-only approaches
+       could not fully eliminate. */
     document.getElementById(`${id}-pdf`)?.addEventListener('click', () => {
       if (options.onPrint) options.onPrint();
-      const title = options.title || document.title;
-      const prev  = document.title;
-      document.title = `BOPinc Nigeria — ${title}`;
 
-      /* Ensure all non-active pages are hidden for print —
-         the active page is already set by navigate(), but this
-         is a safety net for the export toolbar which may be
-         clicked without navigating first. */
-      const activeSection = options.pageId
-        ? document.querySelector(`.page[data-page="${options.pageId}"]`)
+      const prev = document.title;
+      document.title = `BOPinc Nigeria — ${options.title || 'Export'}`;
+
+      /* Find the page to print */
+      const pageId  = options.pageId;
+      const active  = pageId
+        ? document.querySelector(`.page[data-page="${pageId}"]`)
         : document.querySelector('.page.active');
 
-      /* Temporarily mark only the correct page as active */
-      let swapped = false;
-      if (activeSection && !activeSection.classList.contains('active')) {
-        document.querySelectorAll('.page.active').forEach(p => p.classList.remove('active'));
-        activeSection.classList.add('active');
-        swapped = true;
-      }
+      /* Detach all other pages from the DOM */
+      const allPages    = [...document.querySelectorAll('.page')];
+      const detached    = [];
+      const placeholders= [];
+
+      allPages.forEach(page => {
+        if (page === active) return;
+        const placeholder = document.createComment(`page:${page.dataset.page}`);
+        page.parentNode.insertBefore(placeholder, page);
+        page.parentNode.removeChild(page);
+        detached.push(page);
+        placeholders.push(placeholder);
+      });
+
+      /* Ensure the target page is visually active */
+      if (active) active.classList.add('active');
 
       window.print();
 
+      /* Restore all detached pages */
+      placeholders.forEach((ph, i) => {
+        ph.parentNode.insertBefore(detached[i], ph);
+        ph.parentNode.removeChild(ph);
+      });
+
       document.title = prev;
-      if (swapped) {
-        /* Restore — the page the user was actually on */
-        activeSection.classList.remove('active');
-        const currentId = typeof window.currentPage !== 'undefined' ? window.currentPage : '';
-        if (currentId) {
-          const current = document.querySelector(`.page[data-page="${currentId}"]`);
-          if (current) current.classList.add('active');
-        }
-      }
     });
 
     /* CSV */

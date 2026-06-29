@@ -921,9 +921,8 @@ function renderRestrictedContent(pageId) {
     container.innerHTML = `
       <div class="coming-soon">
         <div class="coming-soon-icon" aria-hidden="true">🔮</div>
-        <div class="coming-soon-title">This module is being built</div>
-        <p>You have access to this section. It will be ready in an upcoming phase.</p>
-        <span class="coming-soon-phase">Phases 5–7</span>
+        <div class="coming-soon-title">Coming soon</div>
+        <p>You have access to this section. Content will appear once data is configured in Google Sheets.</p>
       </div>`;
   }
 }
@@ -933,6 +932,10 @@ function renderRoleGatedContent() {
   initFundingPage();
   initGlobalPipelinePage();
 }
+
+/* ════════════════════════════════════════
+   PULSE STRIP
+   ════════════════════════════════════════ */
 
 /* ════════════════════════════════════════
    PULSE STRIP
@@ -1021,47 +1024,57 @@ const DEMO_UPCOMING = [
 ];
 
 /* Visits data — detailed, replaces stat card */
-const DEMO_VISITS = [
-  {
-    id: 'v1',
-    visitors: [
-      { name: 'Sarah Mensah',    role: 'Global Partnerships Director', country: 'Switzerland' },
-      { name: 'James Okafor',    role: 'Regional Director, West Africa', country: 'Ghana' },
-      { name: 'Priya Nair',      role: 'MEL Specialist', country: 'Kenya' },
-    ],
-    arrival: '9 Jul 2025',
-    departure: '14 Jul 2025',
-    daysAway: 12,
-    purpose: 'Country strategy review, partner mapping, and project site visits',
-    assignedContact: 'Amaka Osei',
-    appointments: [
-      { date: '9 Jul',  desc: 'Arrival · airport pickup · office briefing' },
-      { date: '10 Jul', desc: 'Strategy review session — all Nigeria team' },
-      { date: '11 Jul', desc: 'Partner meetings: REAN, ASES Nigeria, GIZ' },
-      { date: '12 Jul', desc: 'Field visit — Kano solar project site' },
-      { date: '13 Jul', desc: 'Stakeholder dinner · BOPinc Lagos network' },
-      { date: '14 Jul', desc: 'Debrief · departures' },
-    ],
-    notes: 'Sarah needs hotel near Victoria Island. James has a dietary requirement — no pork.',
-  },
-  {
-    id: 'v2',
-    visitors: [
-      { name: 'Tom Adeyemi', role: 'Finance Lead', country: 'UK' },
-    ],
-    arrival: '22 Jul 2025',
-    departure: '24 Jul 2025',
-    daysAway: 25,
-    purpose: 'Q2 financial review and grant compliance audit',
-    assignedContact: 'Emeka Okonkwo',
-    appointments: [
-      { date: '22 Jul', desc: 'Arrival · finance team briefing' },
-      { date: '23 Jul', desc: 'Grant compliance review — full day' },
-      { date: '24 Jul', desc: 'Wrap-up · departure' },
-    ],
-    notes: 'Documents needed: Q2 expenditure reports for all active grants.',
-  },
-];
+const DEMO_VISITS = (() => {
+  /* Generate dates relative to today so demo always shows upcoming visits */
+  const pad  = n => String(n).padStart(2, '0');
+  const ymd  = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  const fmtDisplay = d => d.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+  const d1start = new Date(); d1start.setDate(d1start.getDate() + 12);
+  const d1end   = new Date(); d1end.setDate(d1end.getDate()   + 17);
+  const d2start = new Date(); d2start.setDate(d2start.getDate() + 25);
+  const d2end   = new Date(); d2end.setDate(d2end.getDate()   + 27);
+  return [
+    {
+      id: 'v1',
+      visitors: [
+        { name: 'Sarah Mensah',  role: 'Global Partnerships Director', country: 'Switzerland' },
+        { name: 'James Okafor', role: 'Regional Director, West Africa', country: 'Ghana'       },
+        { name: 'Priya Nair',   role: 'MEL Specialist',                country: 'Kenya'       },
+      ],
+      arrival:         ymd(d1start),
+      departure:       ymd(d1end),
+      daysAway:        12,
+      purpose:         'Country strategy review, partner mapping, and project site visits',
+      assignedContact: 'Amaka Osei',
+      appointments: [
+        { date: fmtDisplay(d1start), desc: 'Arrival · airport pickup · office briefing' },
+        { date: fmtDisplay(new Date(d1start.getTime() + 86400000)), desc: 'Strategy review session — all Nigeria team' },
+        { date: fmtDisplay(new Date(d1start.getTime() + 86400000*2)), desc: 'Partner meetings: REAN, ASES Nigeria, GIZ' },
+        { date: fmtDisplay(new Date(d1start.getTime() + 86400000*3)), desc: 'Field visit — Kano solar project site' },
+        { date: fmtDisplay(new Date(d1start.getTime() + 86400000*4)), desc: 'Stakeholder dinner · BOPinc Lagos network' },
+        { date: fmtDisplay(d1end), desc: 'Debrief · departures' },
+      ],
+      notes: 'Sarah needs hotel near Victoria Island. James has a dietary requirement — no pork.',
+    },
+    {
+      id: 'v2',
+      visitors: [
+        { name: 'Tom Adeyemi', role: 'Finance Lead', country: 'UK' },
+      ],
+      arrival:         ymd(d2start),
+      departure:       ymd(d2end),
+      daysAway:        25,
+      purpose:         'Q2 financial review and grant compliance audit',
+      assignedContact: 'Emeka Okonkwo',
+      appointments: [
+        { date: fmtDisplay(d2start), desc: 'Arrival · finance team briefing' },
+        { date: fmtDisplay(new Date(d2start.getTime() + 86400000)), desc: 'Grant compliance review — full day' },
+        { date: fmtDisplay(d2end), desc: 'Wrap-up · departure' },
+      ],
+      notes: 'Documents needed: Q2 expenditure reports for all active grants.',
+    },
+  ];
+})();
 
 /* Notification alerts per user — Phase 6 replaces with live Slack data */
 const DEMO_NOTIFICATIONS = {
@@ -1235,9 +1248,9 @@ function openVisitDetail(visit) {
   overlay.setAttribute('aria-modal', 'true');
   overlay.setAttribute('aria-label', 'Visit details');
 
-  const visitorsHtml = visit.visitors.map(v => `
+  const visitorsHtml = visit.visitors.map((v, i) => `
     <div style="display:flex;align-items:center;gap:10px;padding:6px 0">
-      <div class="avatar avatar-sm avatar-${Math.floor(Math.random()*8)}"
+      <div class="avatar avatar-sm avatar-${i % 8}"
         style="width:30px;height:30px;font-size:11px;flex-shrink:0">
         ${v.name.split(' ').map(n=>n[0]).join('')}
       </div>

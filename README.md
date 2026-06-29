@@ -1,23 +1,23 @@
-# bopinc_nig_dashboard
+# BOPinc Nigeria Dashboard
 
-Team dashboard for the BOPinc Nigeria country office — schedules, projects, opportunities, and intelligence, all in one place.
+Team dashboard for the BOPinc Nigeria country office — schedules, projects, opportunities, and intelligence in one place.
 
 ## Quick links
 
 | | |
 |---|---|
-| **Live dashboard** | `https://bopinc-nigeria.github.io/dashboard` (once deployed) |
-| **Documentation** | `/docs/index.html` or `https://bopinc-nigeria.github.io/dashboard/docs` |
+| **Live dashboard** | Configured in GitHub Pages after deployment |
 | **Admin panel** | `/admin/index.html` (password required) |
+| **Documentation** | `/docs/` folder |
 | **Build status** | See Actions tab above |
 
 ## What this is
 
-A single-page HTML dashboard that pulls data from Google Sheets (updated by Google Apps Script sync engines) and displays it across ten modules: home overview, team pulse, working relationships, leave tracker, projects, Slack intelligence, visits, opportunities, funding analysis, and global pipeline.
+A single-page HTML dashboard pulling data from Google Sheets via Google Apps Script. Ten modules across eight build phases: home overview, team pulse, working relationships, leave tracker, projects, Slack intelligence, visits, opportunities, funding analysis, and global pipeline.
 
-Built mobile-first. Works on phones, tablets, laptops, and wide monitors.
+Built mobile-first. No build tools. No framework. Works on phones, tablets, laptops, and wide monitors.
 
-## Who it's for
+## Who it is for
 
 | Role | What they see |
 |---|---|
@@ -30,68 +30,83 @@ Built mobile-first. Works on phones, tablets, laptops, and wide monitors.
 | Phase | What it adds | Status |
 |---|---|---|
 | 1 | Shell, navigation, home page, role access | ✅ Complete |
-| 2 | Google Sheets live data | 🔜 Weeks 3–4 |
-| 3 | Calendar sync (team pulse, leave heatmap) | 🔜 Weeks 5–6 |
-| 4 | Admin panel | 🔜 Weeks 7–8 |
-| 5 | Opportunities and funding analysis | 🔜 Weeks 9–10 |
-| 6 | Slack intelligence | 🔜 Weeks 11–12 |
-| 7 | Global pipeline, visits, projects radar | 🔜 Weeks 13–14 |
-| 8 | Polish, docs, handover | 🔜 Weeks 15–16 |
+| 2 | Google Sheets live data, login, admin panel | ✅ Complete |
+| 3 | Calendar sync, team pulse, leave heatmap, relationships | ✅ Complete |
+| 4 | Admin CRUD, roster management, audit log, password settings | ✅ Complete |
+| 5 | Opportunities pipeline, funding analysis, capacity gap engine | ✅ Complete |
+| 6 | Slack intelligence, sector routing, urgency scoring | ✅ Complete |
+| 7 | Visits timeline, global pipeline, cross-country data | ✅ Complete |
+| 8 | Polish, print fix, demo data, docs, handover | ✅ Complete |
 
 ## How to run locally
 
-No build tools needed. Just open `index.html` in a browser.
+No build tools needed. Open `index.html` in a browser, or use a local server to avoid CORS issues with the Sheets API:
 
 ```bash
-# Option 1: open directly
-open index.html
-
-# Option 2: local server (recommended to avoid CORS on Sheets API)
-npx serve .
-# or
 python3 -m http.server 8080
+# then open http://localhost:8080
 ```
 
 ## How to deploy
 
-See [docs/getting-started/03-first-time-setup.md](docs/getting-started/03-first-time-setup.md) for the full step-by-step deploy guide.
+1. Fork or clone this repository
+2. Go to Settings → Pages → Source → GitHub Actions
+3. Push to `main` — the `deploy.yml` workflow deploys automatically
+4. The live URL appears in Settings → Pages once the first deploy completes
 
-The short version: push to `main` branch and GitHub Actions deploys to GitHub Pages automatically.
+## Connecting Google Sheets
 
-## Folder structure
+1. Copy `config/secrets-template.js` to `config/secrets.js`
+2. Fill in your Google Sheets API key and document ID
+3. Add `config/secrets.js` to your `.gitignore` (it is already listed)
+4. Deploy the Apps Script files in `sync/` following `docs/modules/calendar-sync.md`
+5. Run `setupTriggers()` once in the Apps Script editor
+
+See `docs/getting-started/03-first-time-setup.md` for the full 13-step activation checklist.
+
+## File structure
 
 ```
-bopinc-nigeria-dashboard/
-├── index.html              Main dashboard
+/
+├── index.html              Main dashboard — all pages and JS
+├── admin/
+│   ├── index.html          Admin login gate
+│   └── data-manager.html   Admin panel — CRUD, audit log, settings
 ├── config/
-│   ├── roles.js            Role definitions and tab access map
-│   └── sheets-config.js    Sheets document IDs (added in phase 2)
+│   ├── roles.js            Role definitions and tab access
+│   ├── sheets-config.js    Sheets document ID and tab names
+│   └── secrets-template.js Copy to secrets.js and fill in keys
 ├── src/
-│   ├── styles/
-│   │   ├── variables.css   Design tokens
-│   │   ├── main.css        Base styles
-│   │   ├── responsive.css  Breakpoints
-│   │   └── print.css       Export styles
-│   ├── components/
-│   │   ├── icons.js        SVG icon library
-│   │   ├── session.js      User session management
-│   │   └── change-request-modal.js  Correction request UI
-│   └── pages/              Individual page HTML (phases 2+)
-├── sync/                   Google Apps Script files (phases 3+)
-├── admin/                  Admin panel (phase 4)
-└── docs/                   Technical documentation site
+│   ├── components/         Reusable JS components
+│   └── styles/             CSS — variables, main, responsive, print
+├── sync/                   Google Apps Script files
+│   ├── calendar-sync.gs    Calendar → Sheets sync engine
+│   ├── slack-sync.gs       Slack → Sheets classification engine
+│   ├── apps-script-api.gs  HTTP write endpoint for the dashboard
+│   └── triggers.gs         Scheduled triggers and daily digest
+└── docs/                   Setup guides and module documentation
 ```
 
-## Making a change
+## Tech stack
 
-1. Create a branch: `git checkout -b feat/your-change`
-2. Make your change
-3. Push and open a pull request
-4. GitHub Actions runs a lint check on the PR
-5. Merge to `main` — deploys automatically
+- **Frontend** — plain HTML, CSS, JavaScript. No framework, no build step.
+- **Database** — Google Sheets (read via Sheets API, write via Apps Script)
+- **Sync** — Google Apps Script (30-minute scheduled trigger)
+- **Hosting** — GitHub Pages (auto-deploy via GitHub Actions)
+- **Auth** — Google Sheets `users-roles` tab for login; admin password in localStorage
 
-See [.github/CONTRIBUTING.md](.github/CONTRIBUTING.md) for branch naming and commit message conventions.
+## Admin password
 
----
+Default development password: `bopinc-admin-2025`
 
-Built for BOPinc Nigeria · Questions? See [docs/troubleshooting/](docs/troubleshooting/)
+Change it immediately after deployment: Admin panel → Settings → Change admin password.
+The new password is stored in localStorage and takes effect on the next login.
+
+## Known issues
+
+- PDF export second-page overflow: partially resolved in Phase 8 using JS DOM isolation. If a second page still appears, raise it as a GitHub issue.
+- Calendar sync requires the Apps Script to have read access to each team member's Google Calendar. Personal Gmail calendars must be shared explicitly.
+
+## Licence
+
+Internal tool — BOPinc Nigeria country office. Not for public distribution.
