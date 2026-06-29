@@ -1101,16 +1101,35 @@ const DEMO_NOTIFICATIONS = {
    ════════════════════════════════════════ */
 function renderHomeSchedule() {
   const container = document.getElementById('home-schedule');
-  container.innerHTML = DEMO_SCHEDULE.map(person => `
+  if (!container) return;
+
+  /* Use live roster if available, else demo schedule */
+  const liveRoster = JSON.parse(localStorage.getItem('bopinc_local_roster') || '[]');
+  const source = liveRoster.length > 0
+    ? liveRoster.map((m, i) => ({
+        name:     m.name || 'Team member',
+        initials: m.initials || m.name?.split(' ').map(n=>n[0]).join('').slice(0,2) || '??',
+        color:    m.avatarColor || i % 8,
+        status:   m.status || 'available',
+        bars:     [] /* live calendar events shown in Team Pulse page */
+      }))
+    : DEMO_SCHEDULE;
+
+  container.innerHTML = source.map(person => `
     <div class="schedule-person">
       <div class="avatar avatar-sm avatar-${person.color}" aria-hidden="true"
         style="width:22px;height:22px;font-size:9px;flex-shrink:0">${person.initials}</div>
       <div class="schedule-bars" role="img" aria-label="${person.name} schedule">
-        ${person.bars.map(bar => `
+        ${(person.bars || []).map(bar => `
           <div class="schedule-bar bar-${bar.type}"
             style="left:${bar.left};width:${bar.width}"
             title="${bar.label}">${bar.label}</div>
         `).join('')}
+        ${(!person.bars || person.bars.length === 0) ? `
+          <div style="font-size:9px;color:var(--color-text-tertiary);
+            display:flex;align-items:center;height:100%;padding-left:8px">
+            Sync calendar to see schedule
+          </div>` : ''}
       </div>
       <span class="avail-dot dot-${person.status}" title="${person.status}" aria-label="${person.status}"
         style="width:6px;height:6px;flex-shrink:0"></span>
@@ -1120,7 +1139,20 @@ function renderHomeSchedule() {
 
 function renderAvailability() {
   const container = document.getElementById('availability-list');
-  container.innerHTML = DEMO_SCHEDULE.map(person => `
+  if (!container) return;
+
+  /* Use live roster if available, else demo schedule */
+  const liveRoster = JSON.parse(localStorage.getItem('bopinc_local_roster') || '[]');
+  const source = liveRoster.length > 0
+    ? liveRoster.map((m, i) => ({
+        name:     m.name || 'Team member',
+        initials: m.initials || m.name?.split(' ').map(n=>n[0]).join('').slice(0,2) || '??',
+        color:    m.avatarColor || i % 8,
+        status:   m.status || 'available',
+      }))
+    : DEMO_SCHEDULE;
+
+  container.innerHTML = source.map(person => `
     <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--color-border)">
       <div class="avatar avatar-sm avatar-${person.color}" aria-hidden="true"
         style="width:26px;height:26px;font-size:10px;flex-shrink:0">${person.initials}</div>
@@ -1138,10 +1170,51 @@ function renderAvailability() {
   `).join('');
 }
 
-/* Activity feed — with Drive folder path and clickable link */
 function renderActivityFeed() {
   const container = document.getElementById('activity-feed');
-  container.innerHTML = DEMO_FEED.map(item => `
+  if (!container) return;
+
+  /* Derive live feed from calendar events when available */
+  const liveEvents = PulseState && PulseState.events && PulseState.events.length > 0;
+  const liveOpps   = OppsState && OppsState.opportunities && OppsState.opportunities.length > 0;
+
+  let feedItems = [];
+
+  if (liveEvents || liveOpps) {
+    /* Build feed from live data */
+    if (liveOpps) {
+      const recentOpps = OppsState.opportunities
+        .filter(o => o.status === 'active' || o.status === 'pipeline')
+        .slice(0, 2);
+      recentOpps.forEach(o => {
+        feedItems.push({
+          color: 'var(--amber-500)',
+          text:  `${o.name} — ${o.status} opportunity (${o.funder})`,
+          folder: null, url: null,
+          time: o.deadline ? `Deadline ${o.deadline}` : 'Active',
+        });
+      });
+    }
+    if (liveEvents) {
+      const today = new Date().toISOString().slice(0,10);
+      PulseState.events
+        .filter(e => e.date === today && !e.isLeave)
+        .slice(0, 3)
+        .forEach(e => {
+          feedItems.push({
+            color: 'var(--green-500)',
+            text:  `${e.userName} — ${e.title}`,
+            folder: null, url: null,
+            time: 'Today',
+          });
+        });
+    }
+  }
+
+  /* Fall back to demo if nothing live */
+  if (feedItems.length === 0) feedItems = DEMO_FEED;
+
+  container.innerHTML = feedItems.map(item => `
     <div class="feed-item">
       <div class="feed-dot" style="background:${item.color}" aria-hidden="true"></div>
       <div class="feed-body">
@@ -1151,16 +1224,7 @@ function renderActivityFeed() {
             style="display:inline-flex;align-items:center;gap:4px;margin-top:4px;
               font-size:10px;color:var(--color-accent);background:var(--color-accent-light);
               padding:2px 7px;border-radius:4px;text-decoration:none;border:0.5px solid var(--green-200)">
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-            </svg>
             ${item.folder}
-            <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-              <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-            </svg>
           </a>` : ''}
         <div class="feed-time" style="margin-top:3px">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -1177,18 +1241,41 @@ function renderActivityFeed() {
 /* Upcoming — with travel type icon */
 function renderUpcoming() {
   const container = document.getElementById('upcoming-list');
-  const typeIcon = { meeting: '👥', external: '🤝', deadline: '⚠️', travel: '✈️' };
-  const typeColor = { meeting: 'badge-green', external: 'badge-blue', deadline: 'badge-red', travel: 'badge-amber' };
-  container.innerHTML = DEMO_UPCOMING.map(item => `
+  if (!container) return;
+
+  const typeIcon  = { meeting:'👥', external:'🤝', deadline:'⚠️', travel:'✈️', focus:'🎯' };
+  const typeColor = { meeting:'badge-green', external:'badge-blue', deadline:'badge-red', travel:'badge-amber', focus:'badge-slate' };
+
+  /* Use live calendar events if available */
+  const today    = new Date().toISOString().slice(0,10);
+  const liveEvts = PulseState && PulseState.events && PulseState.events.length > 0
+    ? PulseState.events
+        .filter(e => e.date >= today && !e.isLeave)
+        .sort((a,b) => a.date.localeCompare(b.date) || a.startHour - b.startHour)
+        .slice(0, 5)
+        .map(e => {
+          const d    = new Date(e.date + 'T12:00:00');
+          const diff = Math.ceil((d - new Date().setHours(0,0,0,0)) / 86400000);
+          const day  = diff === 0 ? 'Today' : diff === 1 ? 'Tomorrow' : d.toLocaleDateString('en-GB',{weekday:'short'});
+          const hrs  = Math.floor(e.startHour);
+          const mins = Math.round((e.startHour - hrs) * 60);
+          const time = `${String(hrs).padStart(2,'0')}:${String(mins).padStart(2,'0')}`;
+          return { label: e.title, day, time, type: e.type || 'meeting' };
+        })
+    : null;
+
+  const source = liveEvts && liveEvts.length > 0 ? liveEvts : DEMO_UPCOMING;
+
+  container.innerHTML = source.map(item => `
     <div style="display:flex;align-items:center;gap:10px;padding:8px var(--space-4);
       border-bottom:1px solid var(--color-border)">
-      <span style="font-size:16px;flex-shrink:0" aria-hidden="true">${typeIcon[item.type]}</span>
+      <span style="font-size:16px;flex-shrink:0" aria-hidden="true">${typeIcon[item.type] || '📌'}</span>
       <div style="flex:1;min-width:0">
         <div style="font-size:var(--text-sm);font-weight:var(--weight-medium);
           white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.label}</div>
         <div style="font-size:var(--text-xs);color:var(--color-text-secondary)">${item.day} · ${item.time}</div>
       </div>
-      <span class="badge ${typeColor[item.type]}" style="font-size:10px;flex-shrink:0">${item.type}</span>
+      <span class="badge ${typeColor[item.type] || 'badge-slate'}" style="font-size:10px;flex-shrink:0">${item.type}</span>
     </div>
   `).join('');
 }
@@ -1197,18 +1284,41 @@ function renderUpcoming() {
 function renderVisitCards() {
   const container = document.getElementById('visit-cards');
   if (!container) return;
-  container.innerHTML = DEMO_VISITS.map(visit => {
-    const lead = visit.visitors[0];
+
+  /* Use live visits if available, else demo */
+  const liveVisits = VisitsState && VisitsState.visits && VisitsState.visits.length > 0
+    ? VisitsState.visits
+    : DEMO_VISITS;
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const upcoming = liveVisits.filter(v => {
+    const dep = new Date(v.departure);
+    return !isNaN(dep) && dep >= today;
+  }).sort((a,b) => new Date(a.arrival) - new Date(b.arrival));
+
+  const source = upcoming.length > 0 ? upcoming : liveVisits;
+
+  if (source.length === 0) {
+    container.innerHTML = `<div style="padding:var(--space-4);text-align:center;
+      font-size:var(--text-sm);color:var(--color-text-secondary)">
+      No upcoming visits scheduled.</div>`;
+    return;
+  }
+
+  container.innerHTML = source.map(visit => {
+    const lead  = visit.visitors[0];
     const extra = visit.visitors.length > 1 ? `+${visit.visitors.length - 1} more` : '';
+    const days  = Math.ceil((new Date(visit.arrival) - today) / 86400000);
+    const daysLabel = !isNaN(days) && days >= 0 ? days : (visit.daysAway || '—');
     return `
-      <div onclick="openVisitDetail(DEMO_VISITS.find(v=>v.id==='${visit.id}'))"
+      <div onclick="openVisitDetail(${JSON.stringify(visit).replace(/"/g,'&quot;')})"
         style="display:flex;align-items:center;gap:12px;padding:10px var(--space-4);
           border-bottom:1px solid var(--color-border);cursor:pointer;
           transition:background var(--transition-fast)"
         onmouseenter="this.style.background='var(--color-surface-2)'"
         onmouseleave="this.style.background=''"
         role="button" tabindex="0"
-        onkeydown="if(event.key==='Enter')openVisitDetail(DEMO_VISITS.find(v=>v.id==='${visit.id}'))">
+        onkeydown="if(event.key==='Enter')openVisitDetail(${JSON.stringify(visit).replace(/"/g,'&quot;')})">
         <div style="width:36px;height:36px;border-radius:50%;background:#f5f3ff;
           display:flex;align-items:center;justify-content:center;
           font-size:18px;flex-shrink:0" aria-hidden="true">✈️</div>
@@ -1227,13 +1337,13 @@ function renderVisitCards() {
         </div>
         <div style="text-align:right;flex-shrink:0">
           <div style="font-size:var(--text-xl);font-weight:600;color:var(--color-text-primary);
-            line-height:1">${visit.daysAway}</div>
+            line-height:1">${daysLabel}</div>
           <div style="font-size:9px;color:var(--color-text-secondary);text-transform:uppercase;
             letter-spacing:0.05em">days</div>
         </div>
-      </div>
-    `;
+      </div>`;
   }).join('');
+}
 }
 
 /* Visit detail modal */
@@ -3038,9 +3148,16 @@ async function loadLiveData(session) {
   try {
     const roster = await Session.fetchRoster();
     if (roster && roster.length > 0 && roster !== DEMO_USERS) {
+      /* Save to localStorage so home page renderers can use it */
+      localStorage.setItem('bopinc_local_roster', JSON.stringify(roster));
+
       const available = roster.filter(u => !u.status || u.status === 'available').length;
       const statEl = document.getElementById('stat-available');
       if (statEl) { statEl.classList.remove('skeleton'); statEl.textContent = `${available}/${roster.length}`; }
+
+      /* Re-render home page sections with live names */
+      renderHomeSchedule();
+      renderAvailability();
     }
 
     /* Projects */
@@ -3059,20 +3176,24 @@ async function loadLiveData(session) {
     const localVisits = JSON.parse(localStorage.getItem('bopinc_local_visits') || '[]');
     const allVisits = [...(visits || []), ...localVisits];
     if (allVisits.length > 0) {
+      VisitsState.visits = allVisits;
+      const today = new Date(); today.setHours(0,0,0,0);
       const upcoming = allVisits
-        .map(v => ({ ...v, _days: SheetsClient.daysUntil(v.arrival) }))
-        .filter(v => v._days != null && v._days >= 0)
-        .sort((a, b) => a._days - b._days);
+        .filter(v => { const dep = new Date(v.departure); return !isNaN(dep) && dep >= today; })
+        .sort((a,b) => new Date(a.arrival) - new Date(b.arrival));
       if (upcoming.length > 0) {
-        const next = upcoming[0];
+        const next  = upcoming[0];
+        const days  = Math.ceil((new Date(next.arrival) - today) / 86400000);
         const statEl = document.getElementById('stat-visit');
         const metaEl = document.getElementById('stat-visit-meta');
-        if (statEl) { statEl.classList.remove('skeleton'); statEl.textContent = `${next._days} days`; }
+        if (statEl) { statEl.classList.remove('skeleton'); statEl.textContent = `${days} days`; }
         if (metaEl) {
-          const visitors = SheetsClient.parseVisitors(next.visitorNames || '');
+          const visitors = next.visitors || [];
           metaEl.textContent = `${visitors[0]?.country || ''} · ${visitors.length} ${visitors.length === 1 ? 'person' : 'people'}`;
         }
       }
+      /* Re-render home page visit cards with live data */
+      renderVisitCards();
     }
 
     /* ── Phase 3: Calendar events ── */
@@ -3096,6 +3217,8 @@ async function loadLiveData(session) {
       }));
       renderPulseChart();
       renderRelationships(PulseState.events);
+      renderUpcoming();
+      renderActivityFeed();
     }
 
     /* ── Phase 3: Leave records ── */
@@ -3129,8 +3252,16 @@ async function loadLiveData(session) {
         teamLead:    row.teamLead    || '',
         description: row.description || '',
       }));
+      /* Update opportunities stat card */
+      const activeOpps = OppsState.opportunities.filter(o =>
+        o.status === 'active' || o.status === 'pipeline'
+      ).length;
+      const statEl = document.getElementById('stat-opps');
+      if (statEl) { statEl.classList.remove('skeleton'); statEl.textContent = activeOpps; }
+      /* Re-render pages and activity feed */
       initOpportunitiesPage();
       initFundingPage();
+      renderActivityFeed();
     }
 
     /* ── Phase 7: Visits ── */
